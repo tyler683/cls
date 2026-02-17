@@ -1,0 +1,1 @@
+{"name": "cls-website", "version": "1.0.0", "description": "CLS website", "scripts": {"build": "echo 'Build command here'"}, "dependencies": {"firebase": "^10.0.0"}}
