@@ -1,1 +1,1 @@
-{"name": "cls-website", "version": "1.0.0", "description": "CLS website", "scripts": {"build": "echo 'Build command here'"}, "dependencies": {"firebase": "^10.0.0"}}
+{\n  "name": "cls",\n  "version": "1.0.0",\n  "description": "A Node.js project",\n  "main": "index.js",\n  "scripts": {\n    "test": "echo 'Error: no test specified' && exit 1"\n  },\n  "author": "tyler683",\n  "license": "ISC"\n}
