@@ -1,0 +1,9 @@
+
+kind: "AppStack"
+apiVersion: "v1"
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+env:
+  - variable: API_KEY
+    secret: GEMINI_API_KEY

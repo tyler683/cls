@@ -1,0 +1,9 @@
+{
+  "name": "Creative Landscaping Solutions LLC",
+  "description": "A professional website for a landscaping company featuring an AI-powered design assistant, service listings, and a project gallery.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone",
+    "geolocation"
+  ]
+}

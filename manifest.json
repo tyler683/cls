@@ -1,0 +1,17 @@
+{
+  "name": "Creative Landscaping Solutions",
+  "short_name": "CLS Landscape",
+  "description": "Premium Kansas City Landscaping & Design",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#FBFCF4",
+  "theme_color": "#0F3829",
+  "icons": [
+    {
+      "src": "https://res.cloudinary.com/clsllc/image/upload/v1765007709/unnamed_2_gvp0eo.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

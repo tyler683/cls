@@ -1,0 +1,13 @@
+
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow public read access to all content
+    match /{document=**} {
+      allow read: if true;
+      // In a production app, you would restrict 'write' to authenticated admins.
+      // For the 'Honest Roots' launch, we allow write access for site management.
+      allow write: if true;
+    }
+  }
+}
