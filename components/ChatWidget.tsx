@@ -2,8 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, Loader2, Sparkles, Trash2, Minimize2, Mic, MicOff, Volume2, Waves, MapPin, ExternalLink } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { getChatResponse, ChatResponse } from '../services/geminiService';
-import { GoogleGenAI, LiveServerMessage, Modality } from '@google/genai';
-
+import { GoogleGenerativeAI } from '@google/generative-ai';
 interface MessageWithLinks extends ChatMessage {
   links?: { title: string; uri: string }[];
 }
