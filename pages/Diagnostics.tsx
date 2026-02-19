@@ -16,12 +16,15 @@ import {
   Settings,
   AlertTriangle,
   ServerCrash,
-  LifeBuoy
+  LifeBuoy,
+  RotateCcw,
+  Upload
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { diagnostics, LogEntry } from '../services/diagnostics';
 import { IS_FIREBASE_CONFIGURED, firebaseConfig } from '../firebaseConfig';
 import { runSystemHealthCheck, HealthCheckResult } from '../services/firebase';
+import { useGallery } from '../context/GalleryContext';
 
 const Diagnostics: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
@@ -29,7 +32,9 @@ const Diagnostics: React.FC = () => {
   const [isRunningTest, setIsRunningTest] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState(false);
   const [supportFeedback, setSupportFeedback] = useState(false);
+  const [isRetrying, setIsRetrying] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { uploadQueue, retryFailedProjects } = useGallery();
 
   const targetDomain = "creativelandscapingsolutions.com";
   const currentHost = window.location.hostname;
@@ -99,6 +104,17 @@ Thank you.`;
       window.location.reload();
     }
   };
+
+  const handleRetryUploads = async () => {
+    setIsRetrying(true);
+    try {
+      await retryFailedProjects();
+    } finally {
+      setIsRetrying(false);
+    }
+  };
+
+  const failedUploads = uploadQueue.filter(q => q.uploadStatus === 'failed' || q.error);
 
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-12 font-mono selection:bg-brand-accent selection:text-white">
@@ -207,6 +223,62 @@ Thank you.`;
           </div>
 
         </div>
+
+        {/* Upload Queue */}
+        {uploadQueue.length > 0 && (
+          <div className="mb-12 bg-gray-900/50 border border-gray-800 rounded-[2.5rem] overflow-hidden">
+            <div className="p-6 border-b border-gray-800 flex justify-between items-center">
+              <div className="flex items-center gap-3">
+                <Upload size={18} className="text-gray-500" />
+                <h2 className="font-bold text-lg">Upload Queue</h2>
+                <span className="text-xs text-gray-500">({uploadQueue.length} item{uploadQueue.length !== 1 ? 's' : ''})</span>
+              </div>
+              {failedUploads.length > 0 && (
+                <button
+                  onClick={handleRetryUploads}
+                  disabled={isRetrying}
+                  className="flex items-center gap-2 px-4 py-2 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded-xl transition-colors text-xs font-bold disabled:opacity-50"
+                >
+                  <RotateCcw size={14} className={isRetrying ? 'animate-spin' : ''} />
+                  {isRetrying ? 'Retrying...' : `Retry Failed (${failedUploads.length})`}
+                </button>
+              )}
+            </div>
+            <div className="divide-y divide-gray-800/50">
+              {uploadQueue.map((item) => {
+                const status = item.uploadStatus ?? (item.error ? 'failed' : 'pending');
+                const statusConfig = {
+                  pending:   { label: 'Pending',   color: 'text-gray-400',  bg: 'bg-gray-500/10'  },
+                  uploading: { label: 'Uploading',  color: 'text-blue-400',  bg: 'bg-blue-500/10'  },
+                  success:   { label: 'Success',    color: 'text-green-400', bg: 'bg-green-500/10' },
+                  failed:    { label: 'Failed',     color: 'text-red-400',   bg: 'bg-red-500/10'   },
+                }[status];
+                return (
+                  <div key={item.id} className="p-4 flex items-center gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm text-gray-200 truncate">{item.title}</p>
+                      {item.error && <p className="text-xs text-red-400 mt-0.5 truncate">{item.error}</p>}
+                      {status === 'uploading' && typeof item.uploadProgress === 'number' && (
+                        <div className="mt-2 h-1.5 bg-gray-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full bg-blue-500 transition-all duration-300"
+                            style={{ width: `${item.uploadProgress}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                    <span className={`shrink-0 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-widest ${statusConfig.color} ${statusConfig.bg}`}>
+                      {statusConfig.label}
+                      {status === 'uploading' && typeof item.uploadProgress === 'number'
+                        ? ` ${Math.round(item.uploadProgress)}%`
+                        : ''}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* Logs Dashboard */}
         <div className="bg-gray-900/50 border border-gray-800 rounded-[2.5rem] overflow-hidden flex flex-col h-[500px]">

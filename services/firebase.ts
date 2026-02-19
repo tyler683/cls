@@ -209,7 +209,11 @@ export const uploadMedia = async (input: string | Blob | File, folder = 'uploads
     const storageRef = ref(firestorage, filename);
     const task = uploadBytesResumable(storageRef, blob);
     return new Promise((res, rej) => {
-      task.on('state_changed', (s) => onProgress?.((s.bytesTransferred / s.totalBytes) * 100), (err) => {
+      task.on('state_changed', (s) => {
+        const progress = (s.bytesTransferred / s.totalBytes) * 100;
+        diagnostics.log('info', `uploadMedia: Progress ${Math.round(progress)}% (${s.bytesTransferred}/${s.totalBytes} bytes)`);
+        onProgress?.(progress);
+      }, (err) => {
         diagnostics.log('error', 'uploadMedia: Upload failed', err.message);
         rej(err);
       }, async () => {
