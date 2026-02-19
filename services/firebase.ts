@@ -4,6 +4,8 @@ const { initializeApp, getApp, getApps } = firebaseApp as any;
 import { 
   initializeFirestore, 
   getFirestore,
+  persistentLocalCache,
+  persistentSingleTabManager,
   onSnapshot, 
   collection, 
   doc, 
@@ -40,6 +42,7 @@ if (IS_FIREBASE_CONFIGURED) {
     
     try {
       db = initializeFirestore(app, {
+        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }),
         experimentalForceLongPolling: true,
       });
     } catch (e) {
