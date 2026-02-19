@@ -1,6 +1,6 @@
-
 export const firebaseConfig = {
-  apiKey: "AIzaSyCWMQpmMFZMW8WAHBBK6CNGYHXT-kT1SN4",
+  // This pulls the key securely from Firebase App Hosting
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: "gen-lang-client-0068569341.firebaseapp.com",
   projectId: "gen-lang-client-0068569341",
   storageBucket: "gen-lang-client-0068569341.firebasestorage.app",
@@ -10,5 +10,5 @@ export const firebaseConfig = {
 };
 
 export const IS_FIREBASE_CONFIGURED = 
-  firebaseConfig.apiKey !== "" && 
-  firebaseConfig.projectId !== "";
+  Boolean(firebaseConfig.apiKey) && 
+  Boolean(firebaseConfig.projectId);
