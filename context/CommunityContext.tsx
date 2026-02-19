@@ -96,11 +96,11 @@ export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children 
           finalThumbnailUrl = await uploadMedia(finalThumbnailUrl, 'uploads', (p) => onProgress?.(90 + (p * 0.1)));
         }
 
-        const cloudPost = {
+        const cloudPost: Post = {
           ...post,
           imageUrl: finalImageUrl,
-          videoUrl: finalVideoUrl,
-          videoThumbnail: finalThumbnailUrl
+          ...(finalVideoUrl !== undefined && { videoUrl: finalVideoUrl }),
+          ...(finalThumbnailUrl !== undefined && { videoThumbnail: finalThumbnailUrl }),
         };
 
         await addPostToDb(cloudPost);

@@ -98,7 +98,7 @@ const sanitizeForFirestore = (obj: any): any => {
       if (Object.prototype.hasOwnProperty.call(item, key)) {
         const val = item[key];
         // Skip internal/private fields and functions
-        if (key.startsWith('_') || typeof val === 'function') continue;
+        if (key.startsWith('_') || typeof val === 'function' || val === undefined) continue;
         result[key] = clean(val);
       }
     }
@@ -175,7 +175,7 @@ export const addPostToDb = async (post: Post) => {
 export const updatePostInDb = async (post: Post) => {
   if (!db) return;
   const { id, ...data } = post;
-  await updateDoc(doc(db, 'posts', id), sanitizeForFirestore(data));
+  await updateDoc(doc(db, 'posts', id), removeUndefined(sanitizeForFirestore(data)));
 };
 
 export const deletePostFromDb = async (id: string) => {

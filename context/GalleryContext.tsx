@@ -125,7 +125,11 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
              finalThumbnail = await uploadMedia(finalThumbnail, 'uploads');
           }
 
-          const savedItem = { ...item, imageUrl: finalUrl, videoThumbnail: finalThumbnail };
+          const savedItem: GalleryItem = {
+            ...item,
+            imageUrl: finalUrl,
+            ...(finalThumbnail !== undefined && { videoThumbnail: finalThumbnail }),
+          };
           await addGalleryItemToDb(savedItem);
           diagnostics.log('success', `Project ${item.title} synced to cloud.`);
           
