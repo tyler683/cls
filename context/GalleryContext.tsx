@@ -4,14 +4,18 @@ import { IS_FIREBASE_CONFIGURED } from '../firebaseConfig';
 import { subscribeToGallery, addGalleryItemToDb, updateGalleryItemInDb, deleteGalleryItemFromDb, uploadMedia, blobUrlToBase64 } from '../services/firebase';
 import { diagnostics } from '../services/diagnostics';
 
-interface ExtendedGalleryItem extends GalleryItem {
+export type UploadStatus = 'pending' | 'uploading' | 'success' | 'failed';
+
+export interface ExtendedGalleryItem extends GalleryItem {
   isPending?: boolean;
   uploadProgress?: number;
+  uploadStatus?: UploadStatus;
   error?: string;
 }
 
 interface GalleryContextType {
   projects: ExtendedGalleryItem[];
+  uploadQueue: ExtendedGalleryItem[];
   addProject: (item: GalleryItem) => Promise<void>;
   addProjects: (items: GalleryItem[], onProgress?: (progress: number) => void) => Promise<void>;
   updateProject: (item: GalleryItem) => Promise<void>;
@@ -19,6 +23,7 @@ interface GalleryContextType {
   importGallery: (items: GalleryItem[]) => void;
   resetGallery: () => void;
   seedCloudData: () => Promise<void>;
+  retryFailedProjects: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -93,7 +98,8 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
     const newPendingItems = items.map(item => ({ 
       ...item, 
       isPending: true, 
-      uploadProgress: 0 
+      uploadProgress: 0,
+      uploadStatus: 'pending' as UploadStatus
     }));
     setPendingProjects(prev => [...newPendingItems, ...prev]);
 
@@ -105,6 +111,10 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
 
       for (const item of items) {
         currentStep++;
+        diagnostics.log('info', `uploadMedia: Starting upload for "${item.title}" (${currentStep}/${totalSteps})`);
+        setPendingProjects(prev => prev.map(pItem => 
+          pItem.id === item.id ? { ...pItem, uploadStatus: 'uploading' as UploadStatus } : pItem
+        ));
         try {
           let finalUrl = item.imageUrl;
           let finalThumbnail = item.videoThumbnail;
@@ -114,7 +124,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
                 const baseProgress = ((currentStep - 1) / totalSteps) * 100;
                 const itemProgress = (p / totalSteps);
                 onProgress?.(baseProgress + itemProgress);
-                
+                diagnostics.log('info', `uploadMedia: Progress for "${item.title}": ${Math.round(p)}%`);
                 setPendingProjects(prev => prev.map(pItem => 
                   pItem.id === item.id ? { ...pItem, uploadProgress: p } : pItem
                 ));
@@ -131,12 +141,15 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             ...(finalThumbnail !== undefined && { videoThumbnail: finalThumbnail }),
           };
           await addGalleryItemToDb(savedItem);
-          diagnostics.log('success', `Project ${item.title} synced to cloud.`);
+          diagnostics.log('success', `uploadMedia: "${item.title}" synced to cloud successfully.`);
+          setPendingProjects(prev => prev.map(pItem => 
+            pItem.id === item.id ? { ...pItem, uploadStatus: 'success' as UploadStatus, uploadProgress: 100 } : pItem
+          ));
           
         } catch (e: any) {
-          diagnostics.log('error', `Failed to upload project: ${item.title}`, e.message);
+          diagnostics.log('error', `uploadMedia: Failed to upload "${item.title}"`, e.message);
           setPendingProjects(prev => prev.map(pItem => 
-            pItem.id === item.id ? { ...pItem, error: e.message || "Upload failed", isPending: false } : pItem
+            pItem.id === item.id ? { ...pItem, uploadStatus: 'failed' as UploadStatus, error: e.message || "Upload failed", isPending: false } : pItem
           ));
         }
       }
@@ -162,6 +175,23 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const addProject = (item: GalleryItem) => addProjects([item]);
+
+  const retryFailedProjects = async () => {
+    const failedItems = pendingProjects.filter(p => p.uploadStatus === 'failed' || p.error);
+    if (failedItems.length === 0) {
+      diagnostics.log('info', 'uploadMedia: No failed uploads to retry.');
+      return;
+    }
+    diagnostics.log('info', `uploadMedia: Retrying ${failedItems.length} failed upload(s)...`);
+    // Reset failed items back to pending before retrying
+    setPendingProjects(prev => prev.map(p =>
+      (p.uploadStatus === 'failed' || p.error)
+        ? { ...p, uploadStatus: 'pending' as UploadStatus, error: undefined, uploadProgress: 0, isPending: true }
+        : p
+    ));
+    const itemsToRetry: GalleryItem[] = failedItems.map(({ isPending: _isPending, uploadProgress: _up, uploadStatus: _us, error: _err, ...item }) => item);
+    await addProjects(itemsToRetry);
+  };
 
   const updateProject = async (item: GalleryItem) => {
     if (isConnected) {
@@ -222,7 +252,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
   const seedCloudData = async () => isConnected && addProjects(DEFAULT_PROJECTS);
 
   return (
-    <GalleryContext.Provider value={{ projects, addProject, addProjects, updateProject, deleteProject, importGallery, resetGallery, seedCloudData, isLoading }}>
+    <GalleryContext.Provider value={{ projects, uploadQueue: pendingProjects, addProject, addProjects, updateProject, deleteProject, importGallery, resetGallery, seedCloudData, retryFailedProjects, isLoading }}>
       {children}
     </GalleryContext.Provider>
   );
