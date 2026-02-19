@@ -4,6 +4,15 @@ import { IS_FIREBASE_CONFIGURED } from '../firebaseConfig';
 import { subscribeToGallery, addGalleryItemToDb, updateGalleryItemInDb, deleteGalleryItemFromDb, uploadMedia, blobUrlToBase64 } from '../services/firebase';
 import { diagnostics } from '../services/diagnostics';
 
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> =>
+  new Promise<T>((resolve, reject) => {
+    const timer = setTimeout(() => reject(new Error('Cloud save timed out. Please retry.')), ms);
+    promise.then(
+      (value) => { clearTimeout(timer); resolve(value); },
+      (err) => { clearTimeout(timer); reject(err); }
+    );
+  });
+
 export type UploadStatus = 'pending' | 'uploading' | 'success' | 'failed';
 
 export interface ExtendedGalleryItem extends GalleryItem {
@@ -140,7 +149,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
             imageUrl: finalUrl,
             ...(finalThumbnail !== undefined && { videoThumbnail: finalThumbnail }),
           };
-          await addGalleryItemToDb(savedItem);
+          await withTimeout(addGalleryItemToDb(savedItem), 30_000);
           diagnostics.log('success', `uploadMedia: "${item.title}" synced to cloud successfully.`);
           setPendingProjects(prev => prev.map(pItem => 
             pItem.id === item.id ? { ...pItem, uploadStatus: 'success' as UploadStatus, uploadProgress: 100 } : pItem
