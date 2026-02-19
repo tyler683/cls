@@ -66,6 +66,9 @@ if (IS_FIREBASE_CONFIGURED) {
 export const getDb = () => db;
 export const isFirebaseReady = () => isConnected;
 
+const removeUndefined = (obj: Record<string, any>): Record<string, any> =>
+  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
+
 const sanitizeForFirestore = (obj: any): any => {
   if (!obj || typeof obj !== 'object') return obj;
   
@@ -109,7 +112,7 @@ export const subscribeToGallery = (callback: (items: GalleryItem[]) => void, onE
 export const addGalleryItemToDb = async (item: GalleryItem) => {
   if (!db) return;
   const { id, ...data } = item;
-  await setDoc(doc(db, 'gallery', id), sanitizeForFirestore(data));
+  await setDoc(doc(db, 'gallery', id), removeUndefined(sanitizeForFirestore(data)));
 };
 
 export const updateGalleryItemInDb = async (item: GalleryItem) => {
@@ -153,7 +156,7 @@ export const subscribeToPosts = (callback: (items: Post[]) => void, onError?: (e
 export const addPostToDb = async (post: Post) => {
   if (!db) return;
   const { id, ...data } = post;
-  await setDoc(doc(db, 'posts', id), sanitizeForFirestore(data));
+  await setDoc(doc(db, 'posts', id), removeUndefined(sanitizeForFirestore(data)));
 };
 
 export const updatePostInDb = async (post: Post) => {
