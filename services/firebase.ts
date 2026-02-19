@@ -45,9 +45,13 @@ if (IS_FIREBASE_CONFIGURED) {
     } catch (e) {
       db = getFirestore(app); 
     }
+    diagnostics.log('success', 'Firestore initialized');
 
     if (firebaseConfig.storageBucket) {
       firestorage = getStorage(app);
+      diagnostics.log('success', `Storage initialized with bucket: ${firebaseConfig.storageBucket}`);
+    } else {
+      diagnostics.log('warn', 'No storageBucket configured. Storage unavailable.');
     }
     
     isConnected = true;
@@ -55,6 +59,8 @@ if (IS_FIREBASE_CONFIGURED) {
   } catch (error: any) {
     diagnostics.log('warn', "Firebase connectivity failed. Local mode active.", error.message);
   }
+} else {
+  diagnostics.log('warn', 'Firebase not configured. Running in local mode.');
 }
 
 export const getDb = () => db;
@@ -162,18 +168,48 @@ export const deletePostFromDb = async (id: string) => {
 };
 
 export const uploadMedia = async (input: string | Blob | File, folder = 'uploads', onProgress?: (p: number) => void): Promise<string> => {
-  if (!firestorage) return typeof input === 'string' ? input : URL.createObjectURL(input);
+  if (!firestorage) {
+    diagnostics.log('error', 'uploadMedia: Firebase Storage is not initialized. Upload aborted.');
+    throw new Error('Firebase Storage is not initialized');
+  }
+  diagnostics.log('info', `uploadMedia: Starting upload to folder "${folder}"`);
   try {
-    const blob = input instanceof Blob ? input : await (await fetch(input as string)).blob();
+    let blob: Blob;
+    if (input instanceof Blob) {
+      blob = input;
+      diagnostics.log('info', `uploadMedia: Input is a ${input instanceof File ? 'File' : 'Blob'} (${blob.size} bytes)`);
+    } else if (input.startsWith('blob:')) {
+      diagnostics.log('info', 'uploadMedia: Input is a blob URL, fetching...');
+      blob = await (await fetch(input)).blob();
+    } else if (input.startsWith('data:')) {
+      diagnostics.log('info', 'uploadMedia: Input is a data URL, converting to blob...');
+      blob = await (await fetch(input)).blob();
+    } else {
+      diagnostics.log('info', 'uploadMedia: Input is a URL, fetching...');
+      blob = await (await fetch(input)).blob();
+    }
     const filename = `${folder}/${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
+    diagnostics.log('info', `uploadMedia: Uploading to path "${filename}"`);
     const storageRef = ref(firestorage, filename);
     const task = uploadBytesResumable(storageRef, blob);
     return new Promise((res, rej) => {
-      task.on('state_changed', (s) => onProgress?.((s.bytesTransferred / s.totalBytes) * 100), rej, 
-      async () => res(await getDownloadURL(task.snapshot.ref)));
+      task.on('state_changed', (s) => onProgress?.((s.bytesTransferred / s.totalBytes) * 100), (err) => {
+        diagnostics.log('error', 'uploadMedia: Upload failed', err.message);
+        rej(err);
+      }, async () => {
+        try {
+          const url = await getDownloadURL(task.snapshot.ref);
+          diagnostics.log('success', `uploadMedia: Upload complete. URL: ${url}`);
+          res(url);
+        } catch (err: any) {
+          diagnostics.log('error', 'uploadMedia: Failed to get download URL', err.message);
+          rej(err);
+        }
+      });
     });
-  } catch (e) {
-    return typeof input === 'string' ? input : URL.createObjectURL(input as Blob);
+  } catch (e: any) {
+    diagnostics.log('error', 'uploadMedia: Upload error', e.message);
+    throw e;
   }
 };
 
