@@ -66,8 +66,21 @@ if (IS_FIREBASE_CONFIGURED) {
 export const getDb = () => db;
 export const isFirebaseReady = () => isConnected;
 
-const removeUndefined = (obj: Record<string, any>): Record<string, any> =>
-  Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined));
+const removeUndefined = (obj: any): any => {
+  if (!obj || typeof obj !== 'object') return obj;
+  if (Array.isArray(obj)) return obj.map(removeUndefined);
+
+  const result: any = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      const val = obj[key];
+      if (val !== undefined) {
+        result[key] = removeUndefined(val);
+      }
+    }
+  }
+  return result;
+};
 
 const sanitizeForFirestore = (obj: any): any => {
   if (!obj || typeof obj !== 'object') return obj;
@@ -118,7 +131,7 @@ export const addGalleryItemToDb = async (item: GalleryItem) => {
 export const updateGalleryItemInDb = async (item: GalleryItem) => {
   if (!db) return;
   const { id, ...data } = item;
-  await updateDoc(doc(db, 'gallery', id), sanitizeForFirestore(data));
+  await updateDoc(doc(db, 'gallery', id), removeUndefined(sanitizeForFirestore(data)));
 };
 
 export const deleteGalleryItemFromDb = async (id: string) => {
