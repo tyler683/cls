@@ -4,7 +4,7 @@ runConfig:
   cpu: 1
   memoryMiB: 512
 env:
-  - variable: GEMINI_API_KEY
+  - variable: VITE_GEMINI_API_KEY
     secret: GEMINI_API_KEY
   - variable: VITE_FIREBASE_API_KEY
     secret: VITE_FIREBASE_API_KEY

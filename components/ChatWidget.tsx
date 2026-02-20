@@ -3,6 +3,8 @@ import { MessageSquare, X, Send, Loader2, Sparkles, Trash2, Minimize2, Mic, MicO
 import { ChatMessage } from '../types';
 import { getChatResponse, ChatResponse } from '../services/geminiService';
 import { GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai';
+
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? '';
 interface MessageWithLinks extends ChatMessage {
   links?: { title: string; uri: string }[];
 }
@@ -55,7 +57,7 @@ const ChatWidget: React.FC = () => {
   const startLiveConsultation = async () => {
     try {
       setIsLiveActive(true);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       }
