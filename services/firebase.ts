@@ -41,7 +41,7 @@ if (IS_FIREBASE_CONFIGURED) {
     
     try {
       db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }),
+        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager(undefined) }),
         experimentalForceLongPolling: true,
       });
     } catch (e) {
@@ -204,4 +204,134 @@ export const uploadMedia = async (input: string | Blob | File, folder = 'uploads
     return input;
   }
   
-  diagnostics.log('info', `uploadMedia: Starting upload to folder \
+  diagnostics.log('info', `uploadMedia: Starting upload to folder "${folder}"...`);
+
+  let blob: Blob;
+  let filename = `${Date.now()}-upload`;
+
+  if (input instanceof File) {
+    blob = input;
+    filename = `${Date.now()}-${input.name}`;
+  } else if (input instanceof Blob) {
+    blob = input;
+  } else if (input.startsWith('data:')) {
+    const [header, data] = input.split(',');
+    const mimeMatch = header.match(/:(.*?);/);
+    const mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+    const byteString = atob(data);
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+    blob = new Blob([ab], { type: mime });
+    const ext = mime.split('/')[1] || 'bin';
+    filename = `${Date.now()}-upload.${ext}`;
+  } else if (input.startsWith('blob:')) {
+    let response: Response;
+    try {
+      response = await fetch(input);
+    } catch (e) {
+      throw new Error(`Failed to fetch blob URL: ${(e as Error).message}`);
+    }
+    blob = await response.blob();
+    const ext = blob.type.split('/')[1] || 'bin';
+    filename = `${Date.now()}-upload.${ext}`;
+  } else {
+    throw new Error('Unsupported input type for upload');
+  }
+
+  const storageRef = ref(firestorage, `${folder}/${filename}`);
+  const uploadTask = uploadBytesResumable(storageRef, blob);
+
+  return new Promise<string>((resolve, reject) => {
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress?.(progress);
+      },
+      (error) => {
+        diagnostics.log('error', `uploadMedia: Upload failed`, error.message);
+        reject(error);
+      },
+      async () => {
+        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+        diagnostics.log('success', `uploadMedia: Upload complete. URL: ${downloadURL.substring(0, 50)}...`);
+        resolve(downloadURL);
+      }
+    );
+  });
+};
+
+export const blobUrlToBase64 = (blobUrl: string): Promise<string> =>
+  fetch(blobUrl)
+    .then(r => r.blob())
+    .then(blob => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    }));
+
+export const runSystemHealthCheck = async (): Promise<HealthCheckResult> => {
+  const result: HealthCheckResult = {
+    firestore: { status: 'pending', message: 'Checking...' },
+    storage: { status: 'pending', message: 'Checking...' },
+  };
+
+  if (db) {
+    try {
+      const q = query(collection(db, 'gallery'), limit(1));
+      await getDocs(q);
+      result.firestore = { status: 'ok', message: 'Connected and readable.' };
+    } catch (e: any) {
+      result.firestore = { status: 'error', message: e.message || 'Connection failed.' };
+    }
+  } else {
+    result.firestore = { status: 'error', message: 'Firestore not initialized.' };
+  }
+
+  if (firestorage) {
+    result.storage = { status: 'ok', message: `Bucket: ${firebaseConfig.storageBucket}` };
+  } else {
+    result.storage = { status: 'error', message: 'Storage not initialized.' };
+  }
+
+  return result;
+};
+
+export const uploadImage = (input: string): Promise<string> => uploadMedia(input, 'content');
+
+export const generateVideoThumbnail = (videoFile: File): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(videoFile);
+    video.src = url;
+    video.preload = 'metadata';
+    video.muted = true;
+    video.playsInline = true;
+    video.onloadedmetadata = () => {
+      video.currentTime = Math.min(1, video.duration * 0.1);
+    };
+    video.onseeked = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 640;
+      canvas.height = video.videoHeight || 360;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        reject(new Error('Canvas context not available'));
+        return;
+      }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      canvas.toBlob((blob) => {
+        URL.revokeObjectURL(url);
+        if (blob) resolve(blob);
+        else reject(new Error('Failed to generate thumbnail'));
+      }, 'image/jpeg', 0.8);
+    };
+    video.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load video'));
+    };
+    video.load();
+  });
