@@ -5,20 +5,32 @@ you need to take **outside the repo** before merging to `main`.
 
 ---
 
-## Step 1 — Firebase Console: Set the Firebase API key as a build environment variable
+## Step 1 — GitHub Repository Secret: Set the Firebase API key
 
-The app reads `VITE_FIREBASE_API_KEY` at build time. This is a **public identifier**
-(not a secret), so it goes in App Hosting's environment variables panel, not Secret Manager.
+The app reads `VITE_FIREBASE_API_KEY` at **build time** via GitHub Actions. It must be
+stored as a **GitHub repository secret** — not in App Hosting's environment panel.
+(This is a public identifier, not a secret, but GitHub Secrets is the correct place
+because it is injected into the GitHub Actions build step.)
 
-1. Open [Firebase Console](https://console.firebase.google.com)
-2. Select your **production project** (`gen-lang-client-0068569341`)
-3. **App Hosting** → select your backend → **Settings** tab → **Environment variables**
-4. Add a new variable:
+1. Find your Firebase Web API key:
+   - Open [Firebase Console](https://console.firebase.google.com)
+   - Select project **`gen-lang-client-0068569341`**
+   - Click the ⚙️ gear icon → **Project settings** → **Your apps** tab
+   - Under your Web app, copy the `apiKey` value (looks like `AIzaSy…`)
+
+2. Add it as a GitHub repository secret:
+   - Open your GitHub repo → **Settings** → **Secrets and variables** → **Actions**
+   - Click **New repository secret**
    - Name: `VITE_FIREBASE_API_KEY`
-   - Value: your Firebase Web API key
-   - Availability: `BUILD`
-5. Where to find the value:
-   **Project Settings** (⚙️ gear icon) → **Your apps** → Web app → `apiKey` field
+   - Value: the `apiKey` you copied above
+   - Click **Add secret**
+
+> **Why not App Hosting?** This project deploys via Firebase Hosting (static files built
+> by GitHub Actions and uploaded to the Firebase CDN). The `apphosting.yaml` file is
+> present for a possible App Hosting backend, but the production site at
+> `creativelandscapingsolutions.com` is served by Firebase Hosting. Vite inlines the
+> `VITE_*` env vars at **build time** inside the GitHub Actions runner, so the value
+> must be available there as a GitHub secret.
 
 ---
 
@@ -50,6 +62,7 @@ authenticate to Google Cloud. These secrets must exist in your GitHub repository
 
 | Secret name | Value |
 |---|---|
+| `VITE_FIREBASE_API_KEY` | Firebase Web API key — see Step 1 above |
 | `WIF_PROVIDER` | Your Workload Identity Provider resource name (e.g. `projects/123/locations/global/workloadIdentityPools/my-pool/providers/my-provider`) |
 | `WIF_SERVICE_ACCOUNT` | The service account email (e.g. `firebase-deploy@gen-lang-client-0068569341.iam.gserviceaccount.com`) |
 
@@ -78,7 +91,7 @@ Once Steps 1–3 are complete:
 1. **Merge this PR into `main`**
 2. The `firebase-hosting-merge.yml` GitHub Action runs automatically:
    - Installs dependencies (`npm ci`)
-   - Builds the app (`npm run build`) — `VITE_FIREBASE_API_KEY` (from Step 1) and `VITE_GEMINI_API_KEY` (from the `GEMINI_API_KEY` secret in Step 2, exposed as a build env var via `apphosting.yaml availability: BUILD`) are both inlined by Vite at this point
+   - Builds the app (`npm run build`) — `VITE_FIREBASE_API_KEY` (from the GitHub secret set in Step 1) and `VITE_GEMINI_API_KEY` (from the `GEMINI_API_KEY` secret in Step 2, exposed via `apphosting.yaml availability: BUILD`) are both inlined by Vite at this point
    - Authenticates to Google Cloud
    - Deploys to Firebase Hosting
 3. Visit `https://creativelandscapingsolutions.com` — the site is live ✅
