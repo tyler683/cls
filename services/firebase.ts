@@ -1,4 +1,3 @@
-
 import * as firebaseApp from 'firebase/app';
 const { initializeApp, getApp, getApps } = firebaseApp as any;
 import { 
@@ -191,106 +190,18 @@ export const uploadMedia = async (input: string | Blob | File, folder = 'uploads
     diagnostics.log('error', 'uploadMedia: Firebase Storage is not initialized. Upload aborted.');
     throw new Error('Firebase Storage is not initialized');
   }
-  diagnostics.log('info', `uploadMedia: Starting upload to folder "${folder}"`);
-  try {
-    let blob: Blob;
-    if (input instanceof Blob) {
-      blob = input;
-      diagnostics.log('info', `uploadMedia: Input is a ${input instanceof File ? 'File' : 'Blob'} (${blob.size} bytes)`);
-    } else if (input.startsWith('blob:')) {
-      diagnostics.log('info', 'uploadMedia: Input is a blob URL, fetching...');
-      blob = await (await fetch(input)).blob();
-    } else if (input.startsWith('data:')) {
-      diagnostics.log('info', 'uploadMedia: Input is a data URL, converting to blob...');
-      blob = await (await fetch(input)).blob();
-    } else {
-      diagnostics.log('info', 'uploadMedia: Input is a URL, fetching...');
-      blob = await (await fetch(input)).blob();
-    }
-    const filename = `${folder}/${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
-    diagnostics.log('info', `uploadMedia: Uploading to path "${filename}"`);
-    const storageRef = ref(firestorage, filename);
-    const task = uploadBytesResumable(storageRef, blob);
-    return new Promise((res, rej) => {
-      task.on('state_changed', (s) => {
-        const progress = (s.bytesTransferred / s.totalBytes) * 100;
-        diagnostics.log('info', `uploadMedia: Progress ${Math.round(progress)}% (${s.bytesTransferred}/${s.totalBytes} bytes)`);
-        onProgress?.(progress);
-      }, (err) => {
-        diagnostics.log('error', 'uploadMedia: Upload failed', err.message);
-        rej(err);
-      }, async () => {
-        try {
-          const url = await getDownloadURL(task.snapshot.ref);
-          diagnostics.log('success', `uploadMedia: Upload complete. URL: ${url}`);
-          res(url);
-        } catch (err: any) {
-          diagnostics.log('error', 'uploadMedia: Failed to get download URL', err.message);
-          rej(err);
-        }
-      });
-    });
-  } catch (e: any) {
-    diagnostics.log('error', 'uploadMedia: Upload error', e.message);
-    throw e;
+  
+  // NEW: Check if input is already a permanent URL
+  if (typeof input === 'string' && 
+      !input.startsWith('blob:') && 
+      !input.startsWith('data:') &&
+      (input.includes('firebasestorage.googleapis.com') || 
+       input.includes('cloudinary.com') ||
+       input.includes('res.cloudinary.com') ||
+       (input.startsWith('https://') && !input.includes('photos.google.com')))) {
+    diagnostics.log('info', `uploadMedia: Input is already a permanent URL, skipping upload: ${input.substring(0, 50)}...`);
+    onProgress?.(100);
+    return input;
   }
-};
-
-export const uploadImage = (url: string) => uploadMedia(url, 'uploads');
-
-export const generateVideoThumbnail = async (videoFile: File | string): Promise<Blob> => {
-  return new Promise((resolve, reject) => {
-    const video = document.createElement('video');
-    video.autoplay = false;
-    video.muted = true;
-    if (typeof videoFile === 'string') video.crossOrigin = "anonymous";
-    video.src = typeof videoFile === 'string' ? videoFile : URL.createObjectURL(videoFile);
-    video.onloadeddata = () => { video.currentTime = 1; };
-    video.onseeked = () => {
-      try {
-        const canvas = document.createElement('canvas');
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-        const ctx = canvas.getContext('2d');
-        if (!ctx) return reject(new Error("No canvas"));
-        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-        canvas.toBlob((blob) => {
-          if (blob) resolve(blob);
-          else reject(new Error("Blob failed"));
-        }, 'image/jpeg', 0.7);
-      } catch (err) { reject(err); }
-    };
-    video.onerror = () => reject(new Error("Video load failed"));
-  });
-};
-
-export const runSystemHealthCheck = async (): Promise<HealthCheckResult> => {
-  const res: HealthCheckResult = {
-    firestore: { status: 'pending', message: 'Checking...' },
-    storage: { status: 'pending', message: 'Checking...' }
-  };
-  if (!db) {
-    res.firestore = { status: 'error', message: 'Not initialized.' };
-    res.storage = { status: 'error', message: 'Storage unavailable.' };
-    return res;
-  }
-  try {
-    await getDocs(query(collection(db, 'gallery'), limit(1)));
-    res.firestore = { status: 'ok', message: 'Connected.' };
-  } catch (e: any) {
-    res.firestore = { status: 'error', message: `Error: ${e.code || e.message}` };
-  }
-  res.storage = firestorage ? { status: 'ok', message: 'Ready.' } : { status: 'error', message: 'No bucket.' };
-  return res;
-};
-
-export const blobUrlToBase64 = async (url: string): Promise<string> => {
-  const response = await fetch(url);
-  const blob = await response.blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onloadend = () => resolve(reader.result as string);
-    reader.onerror = reject;
-    reader.readAsDataURL(blob);
-  });
-};
+  
+  diagnostics.log('info', `uploadMedia: Starting upload to folder \
