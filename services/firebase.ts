@@ -90,7 +90,7 @@ if (IS_FIREBASE_CONFIGURED) {
     diagnostics.log('warn', "Firebase connectivity failed. Local mode active.", error.message);
   }
 } else {
-  diagnostics.log('warn', 'Firebase not configured. Running in local mode.');
+  diagnostics.log('warn', 'Firebase not configured: VITE_FIREBASE_API_KEY is missing. Set it as a GitHub repository secret (Settings → Secrets and variables → Actions) and redeploy. See DEPLOY.md Step 1.');
 }
 
 export const getDb = () => db;
