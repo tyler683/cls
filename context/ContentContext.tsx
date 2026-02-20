@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useEffect, useMemo } from 'react';
 import { IS_FIREBASE_CONFIGURED } from '../firebaseConfig';
 import { subscribeToContent, updateContentImageInDb, uploadImage, blobUrlToBase64 } from '../services/firebase';
 
@@ -20,7 +20,7 @@ export const ContentProvider: React.FC<{ children: ReactNode }> = ({ children })
   const [isLoading, setIsLoading] = useState(true);
 
   // Merge DB images with local overrides (local takes precedence for optimistic UI)
-  const images = { ...dbImages, ...localOverrides };
+  const images = useMemo(() => ({ ...dbImages, ...localOverrides }), [dbImages, localOverrides]);
 
   const loadDemoData = () => {
       try {

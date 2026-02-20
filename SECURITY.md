@@ -1,21 +1,35 @@
 # Security Policy
 
-## Supported Versions
-
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
-
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
-
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+If you discover a security vulnerability in this project, please report it
+by emailing **tyler@creativelandscapingsolutions.com** rather than opening a
+public GitHub issue.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+Please include:
+- A description of the vulnerability and its potential impact
+- Steps to reproduce the issue
+- Any suggested fix if you have one
+
+We will acknowledge receipt within 48 hours and aim to release a fix within
+14 days for confirmed issues.
+
+## Scope
+
+This is a client-side web application backed by Firebase. Security is primarily
+enforced by:
+
+- **Firestore Security Rules** (`firestore.rules`) — controls read/write access to the database
+- **Firebase Storage Rules** (`storage.rules`) — controls media upload/download access
+- **Firebase App Check** — (recommended for production) validates that requests come from the genuine app
+
+## API Keys
+
+Firebase web API keys (`VITE_FIREBASE_API_KEY`) are **public identifiers** — per
+[Firebase documentation](https://firebase.google.com/docs/projects/api-keys) they
+are safe to embed in client code and do not need to be kept secret. Access control
+is enforced by the rules files above, not by the API key.
+
+The Gemini AI key (`VITE_GEMINI_API_KEY`) is genuinely secret and is stored in
+Google Cloud Secret Manager, never committed to source control.
+

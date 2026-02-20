@@ -340,6 +340,7 @@ const Community: React.FC = () => {
               const commentsCount: number = post.comments ? post.comments.length : 0;
               const isCommentsOpen = openCommentsId === post.id;
               const isVideoPlaying = playingVideoId === post.id;
+              const embedUrl = post.videoUrl ? getEmbedUrl(post.videoUrl) : null;
 
               return (
                 <div key={post.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-md transition-shadow duration-300 relative group">
@@ -354,8 +355,8 @@ const Community: React.FC = () => {
                     {post.videoUrl && (
                        <div className="mb-6 aspect-video rounded-2xl overflow-hidden bg-black shadow-lg">
                          {isVideoPlaying ? (
-                           getEmbedUrl(post.videoUrl) ? (
-                             <iframe src={getEmbedUrl(post.videoUrl)!} title="Video" className="w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
+                           embedUrl ? (
+                             <iframe src={embedUrl} title="Video" className="w-full h-full" frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen></iframe>
                            ) : (
                              <video src={post.videoUrl} controls autoPlay className="w-full h-full object-contain" />
                            )

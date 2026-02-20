@@ -1,11 +1,86 @@
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Shovel, Truck, Hammer, Waves, X, Mountain, Sparkles, Send, Loader2, Leaf, AlertCircle, ArrowRight, ChevronDown, ChevronUp, HelpCircle } from 'lucide-react';
 import { ServiceItem, DesignVisionResponse } from '../types';
 import EditableImage from '../components/EditableImage';
 import { generateDesignVision } from '../services/geminiService';
 import PageHero from '../components/PageHero';
 import SEO from '../components/SEO';
+
+const SERVICES: ServiceItem[] = [
+  {
+    id: '1',
+    title: 'Demolition & Hauling',
+    category: 'Site Prep',
+    description: 'Efficient removal of old structures and debris to prepare your site for something new.',
+    longDescription: 'Before new projects can begin, the old must be cleared away. We provide professional light demolition and hauling services to prepare your property. From removing old sheds and decks to clearing brush and breaking up concrete, we handle the heavy lifting. We leave your site clean, safe, and ready for the next phase of development, ensuring all materials are disposed of responsibly.',
+    icon: <Truck className="w-8 h-8 text-white" />,
+    imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764902471/20180424_185402_iqlxwx.jpg'
+  },
+  {
+    id: '2',
+    title: 'Hardscaping',
+    category: 'Hardscaping',
+    description: 'Custom patios, walkways, and retaining walls built with craftsmanship and durability in mind.',
+    longDescription: 'We specialize in creating functional and elegant outdoor living spaces. Our hardscaping services include the professional installation of paver patios, natural stone walkways, and structural retaining walls. We use high-quality materials that complement your home\'s architecture and are built to withstand the elements, creating a lasting foundation for your outdoor memories.',
+    icon: <Shovel className="w-8 h-8 text-white" />,
+    imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764901140/20250409_163720_dwlgsb.jpg'
+  },
+  {
+    id: '3',
+    title: 'Grading & Drainage',
+    category: 'Site Prep',
+    description: 'Expert site grading and water management solutions to protect your property and foundation.',
+    longDescription: 'Proper water management is essential for a healthy landscape and a safe home. We specialize in correcting slopes, leveling ground, and implementing comprehensive drainage systems like French drains, catch basins, and swales. We ensure your land is properly shaped to direct water away from your foundation, keeping your property dry and protected during storms.',
+    icon: <Mountain className="w-8 h-8 text-white" />,
+    imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764903775/drainage_cbr5gs.jpg'
+  },
+  {
+    id: '4',
+    title: 'Decks & Fences',
+    category: 'Structures',
+    description: 'High-quality decks and privacy fences using premium composite materials or traditional wood.',
+    longDescription: 'Enhance your outdoor living experience with a custom-built deck or fence. We specialize in high-end composite decking that offers the look of wood without the maintenance, as well as traditional cedar craftsmanship. Whether you need a private sanctuary or a spacious area for entertaining, we build structures that are both beautiful and durable.',
+    icon: <Hammer className="w-8 h-8 text-white" />,
+    imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764901691/Gray-Composite-Decking2-1024x766_lfckp3.jpg'
+  },
+  {
+    id: '5',
+    title: 'Pools & Water Features',
+    category: 'Water Features',
+    description: 'Transform your backyard with custom in-ground pools, spas, and soothing water features.',
+    longDescription: 'A water feature serves as the ultimate centerpiece for any backyard. We design and manage the installation of custom in-ground pools and relaxing spas tailored to your specific needs. Beyond pools, we create tranquil pondless waterfalls and bubbling fountains that add visual interest and soothing soundscapes to your outdoor retreat.',
+    icon: <Waves className="w-8 h-8 text-white" />,
+    imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764902053/20250821_153825_hamrxj.jpg'
+  }
+];
+
+const CATEGORIES = [
+  { id: 'All', label: 'All Services' },
+  { id: 'Hardscaping', label: 'Hardscaping' },
+  { id: 'Structures', label: 'Decks & Fences' },
+  { id: 'Water Features', label: 'Pools & Water' },
+  { id: 'Site Prep', label: 'Site Preparation' },
+];
+
+const FAQS = [
+  {
+    question: "What is your typical project timeline?",
+    answer: "Timelines vary depending on scope, but most hardscaping projects (patios/retaining walls) take between 5-10 business days. Custom deck or pool surrounds may take longer depending on permitting and material availability."
+  },
+  {
+    question: "Do you handle the permitting process?",
+    answer: "Yes! We manage the entire permitting process with your local Kansas City municipality to ensure all structural work (like decks or high retaining walls) is fully compliant with local codes."
+  },
+  {
+    question: "Why is grading and drainage so important in KC?",
+    answer: "Kansas City features heavy clay soil which expands when wet. Proper grading ensures that water moves away from your foundation, preventing basement flooding and structural issues over time."
+  },
+  {
+    question: "What kind of maintenance is required for your hardscaping?",
+    answer: "We build with longevity in mind. Our paver systems are designed to be low-maintenance, requiring only occasional sweeping and potentially resealing every 3-5 years to maintain that 'new' look."
+  }
+];
 
 const Services: React.FC = () => {
   // Services State
@@ -29,84 +104,10 @@ const Services: React.FC = () => {
   const [visionResult, setVisionResult] = useState<DesignVisionResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const services: ServiceItem[] = [
-    {
-      id: '1',
-      title: 'Demolition & Hauling',
-      category: 'Site Prep',
-      description: 'Efficient removal of old structures and debris to prepare your site for something new.',
-      longDescription: 'Before new projects can begin, the old must be cleared away. We provide professional light demolition and hauling services to prepare your property. From removing old sheds and decks to clearing brush and breaking up concrete, we handle the heavy lifting. We leave your site clean, safe, and ready for the next phase of development, ensuring all materials are disposed of responsibly.',
-      icon: <Truck className="w-8 h-8 text-white" />,
-      imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764902471/20180424_185402_iqlxwx.jpg'
-    },
-    {
-      id: '2',
-      title: 'Hardscaping',
-      category: 'Hardscaping',
-      description: 'Custom patios, walkways, and retaining walls built with craftsmanship and durability in mind.',
-      longDescription: 'We specialize in creating functional and elegant outdoor living spaces. Our hardscaping services include the professional installation of paver patios, natural stone walkways, and structural retaining walls. We use high-quality materials that complement your home\'s architecture and are built to withstand the elements, creating a lasting foundation for your outdoor memories.',
-      icon: <Shovel className="w-8 h-8 text-white" />,
-      imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764901140/20250409_163720_dwlgsb.jpg'
-    },
-    {
-      id: '3',
-      title: 'Grading & Drainage',
-      category: 'Site Prep',
-      description: 'Expert site grading and water management solutions to protect your property and foundation.',
-      longDescription: 'Proper water management is essential for a healthy landscape and a safe home. We specialize in correcting slopes, leveling ground, and implementing comprehensive drainage systems like French drains, catch basins, and swales. We ensure your land is properly shaped to direct water away from your foundation, keeping your property dry and protected during storms.',
-      icon: <Mountain className="w-8 h-8 text-white" />,
-      imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764903775/drainage_cbr5gs.jpg'
-    },
-    {
-      id: '4',
-      title: 'Decks & Fences',
-      category: 'Structures',
-      description: 'High-quality decks and privacy fences using premium composite materials or traditional wood.',
-      longDescription: 'Enhance your outdoor living experience with a custom-built deck or fence. We specialize in high-end composite decking that offers the look of wood without the maintenance, as well as traditional cedar craftsmanship. Whether you need a private sanctuary or a spacious area for entertaining, we build structures that are both beautiful and durable.',
-      icon: <Hammer className="w-8 h-8 text-white" />,
-      imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764901691/Gray-Composite-Decking2-1024x766_lfckp3.jpg'
-    },
-    {
-      id: '5',
-      title: 'Pools & Water Features',
-      category: 'Water Features',
-      description: 'Transform your backyard with custom in-ground pools, spas, and soothing water features.',
-      longDescription: 'A water feature serves as the ultimate centerpiece for any backyard. We design and manage the installation of custom in-ground pools and relaxing spas tailored to your specific needs. Beyond pools, we create tranquil pondless waterfalls and bubbling fountains that add visual interest and soothing soundscapes to your outdoor retreat.',
-      icon: <Waves className="w-8 h-8 text-white" />,
-      imageUrl: 'https://res.cloudinary.com/clsllc/image/upload/v1764902053/20250821_153825_hamrxj.jpg'
-    }
-  ];
-
-  const categories = [
-    { id: 'All', label: 'All Services' },
-    { id: 'Hardscaping', label: 'Hardscaping' },
-    { id: 'Structures', label: 'Decks & Fences' },
-    { id: 'Water Features', label: 'Pools & Water' },
-    { id: 'Site Prep', label: 'Site Preparation' },
-  ];
-
-  const faqs = [
-    {
-      question: "What is your typical project timeline?",
-      answer: "Timelines vary depending on scope, but most hardscaping projects (patios/retaining walls) take between 5-10 business days. Custom deck or pool surrounds may take longer depending on permitting and material availability."
-    },
-    {
-      question: "Do you handle the permitting process?",
-      answer: "Yes! We manage the entire permitting process with your local Kansas City municipality to ensure all structural work (like decks or high retaining walls) is fully compliant with local codes."
-    },
-    {
-      question: "Why is grading and drainage so important in KC?",
-      answer: "Kansas City features heavy clay soil which expands when wet. Proper grading ensures that water moves away from your foundation, preventing basement flooding and structural issues over time."
-    },
-    {
-      question: "What kind of maintenance is required for your hardscaping?",
-      answer: "We build with longevity in mind. Our paver systems are designed to be low-maintenance, requiring only occasional sweeping and potentially resealing every 3-5 years to maintain that 'new' look."
-    }
-  ];
-
-  const filteredServices = filter === 'All' 
-    ? services 
-    : services.filter(s => s.category === filter);
+  const filteredServices = useMemo(
+    () => filter === 'All' ? SERVICES : SERVICES.filter(s => s.category === filter),
+    [filter]
+  );
 
   // --- Handlers ---
 
@@ -182,7 +183,7 @@ const Services: React.FC = () => {
         
         {/* Filter Buttons */}
         <div className="flex flex-wrap justify-center gap-3 mb-16">
-          {categories.map((cat) => (
+          {CATEGORIES.map((cat) => (
             <button
               key={cat.id}
               onClick={() => setFilter(cat.id)}
@@ -234,7 +235,7 @@ const Services: React.FC = () => {
            </div>
            
            <div className="space-y-4">
-              {faqs.map((faq, i) => (
+              {FAQS.map((faq, i) => (
                 <div key={i} className="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm hover:shadow-md transition-shadow">
                    <button 
                     onClick={() => toggleFaq(i)}

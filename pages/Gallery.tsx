@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Play, Image as ImageIcon, Loader2, X } from 'lucide-react';
 import { useGallery } from '../context/GalleryContext';
 import { GalleryItem } from '../types';
@@ -26,9 +26,10 @@ const Gallery: React.FC = () => {
   const [activeCategory, setActiveCategory] = useState<Category>('all');
   const [lightboxItem, setLightboxItem] = useState<GalleryItem | null>(null);
 
-  const filtered = activeCategory === 'all'
-    ? projects
-    : projects.filter(p => p.category === activeCategory);
+  const filtered = useMemo(
+    () => activeCategory === 'all' ? projects : projects.filter(p => p.category === activeCategory),
+    [projects, activeCategory]
+  );
 
   return (
     <div className="bg-brand-cream min-h-screen">

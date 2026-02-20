@@ -5,6 +5,12 @@
       "firebase.json",
       "**/.*",
       "**/__*__/*"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
   }
 }

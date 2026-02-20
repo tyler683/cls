@@ -2,7 +2,9 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, Loader2, Sparkles, Trash2, Minimize2, Mic, MicOff, Volume2, Waves, MapPin, ExternalLink } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { getChatResponse, ChatResponse } from '../services/geminiService';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai';
+
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? '';
 interface MessageWithLinks extends ChatMessage {
   links?: { title: string; uri: string }[];
 }
@@ -55,7 +57,7 @@ const ChatWidget: React.FC = () => {
   const startLiveConsultation = async () => {
     try {
       setIsLiveActive(true);
-      const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+      const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
       if (!audioContextRef.current) {
         audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 24000 });
       }
@@ -76,7 +78,7 @@ const ChatWidget: React.FC = () => {
             scriptProcessor.connect(inputCtx.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-            const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+            const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (audioData && audioContextRef.current) {
               const ctx = audioContextRef.current;
               nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
@@ -149,14 +151,23 @@ const ChatWidget: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    const response: ChatResponse = await getChatResponse([...messages, userMsg], userMsg.text);
-    setMessages(prev => [...prev, { 
-      role: 'model', 
-      text: response.text, 
-      timestamp: Date.now(),
-      links: response.groundingLinks
-    }]);
-    setIsLoading(false);
+    try {
+      const response: ChatResponse = await getChatResponse([...messages, userMsg], userMsg.text);
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: response.text, 
+        timestamp: Date.now(),
+        links: response.groundingLinks
+      }]);
+    } catch {
+      setMessages(prev => [...prev, {
+        role: 'model',
+        text: "I'm having trouble connecting right now. Please call Tyler at (816) 337-2654.",
+        timestamp: Date.now()
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

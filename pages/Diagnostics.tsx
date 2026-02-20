@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useMemo } from 'react';
 import { 
   Activity, 
   Database, 
@@ -26,6 +26,11 @@ import { IS_FIREBASE_CONFIGURED, firebaseConfig } from '../firebaseConfig';
 import { runSystemHealthCheck, HealthCheckResult } from '../services/firebase';
 import { useGallery } from '../context/GalleryContext';
 
+const TARGET_DOMAIN = "creativelandscapingsolutions.com";
+const CURRENT_HOST = window.location.hostname;
+const IS_TARGET_DOMAIN = CURRENT_HOST === TARGET_DOMAIN;
+const IS_FALLBACK_DOMAIN = CURRENT_HOST.includes('web.app');
+
 const Diagnostics: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [healthStatus, setHealthStatus] = useState<HealthCheckResult | null>(null);
@@ -36,11 +41,11 @@ const Diagnostics: React.FC = () => {
   const scrollRef = useRef<HTMLDivElement>(null);
   const { uploadQueue, retryFailedProjects } = useGallery();
 
-  const targetDomain = "creativelandscapingsolutions.com";
-  const currentHost = window.location.hostname;
-  const isTargetDomain = currentHost === targetDomain;
-  const isFallbackDomain = currentHost.includes('web.app');
-  
+  const failedUploads = useMemo(
+    () => uploadQueue.filter(q => q.uploadStatus === 'failed' || q.error),
+    [uploadQueue]
+  );
+
   // Detection for the Squarespace 403 Conflict
   const [dnsConflict, setDnsConflict] = useState(false);
 
@@ -50,7 +55,7 @@ const Diagnostics: React.FC = () => {
     });
     handleRunHealthCheck();
     
-    if (currentHost !== 'localhost' && !isFallbackDomain && !isTargetDomain) {
+    if (CURRENT_HOST !== 'localhost' && !IS_FALLBACK_DOMAIN && !IS_TARGET_DOMAIN) {
       setDnsConflict(true);
     }
 
@@ -114,8 +119,6 @@ Thank you.`;
     }
   };
 
-  const failedUploads = uploadQueue.filter(q => q.uploadStatus === 'failed' || q.error);
-
   return (
     <div className="min-h-screen bg-black text-white p-6 md:p-12 font-mono selection:bg-brand-accent selection:text-white">
       <div className="max-w-6xl mx-auto">
@@ -144,7 +147,7 @@ Thank you.`;
         </div>
 
         {/* DNS Conflict Alert */}
-        {(dnsConflict || isFallbackDomain) && (
+        {(dnsConflict || IS_FALLBACK_DOMAIN) && (
           <div className="mb-8 p-8 bg-amber-500/10 border border-amber-500/30 rounded-[2rem] flex flex-col md:flex-row items-center gap-8">
             <div className="p-4 bg-amber-500/20 text-amber-500 rounded-2xl">
               <ServerCrash size={32} />
@@ -168,14 +171,14 @@ Thank you.`;
         {/* Health Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           
-          <div className={`p-6 bg-gray-900/50 border rounded-3xl transition-colors ${isTargetDomain ? 'border-gray-800' : 'border-amber-500/30'}`}>
+          <div className={`p-6 bg-gray-900/50 border rounded-3xl transition-colors ${IS_TARGET_DOMAIN ? 'border-gray-800' : 'border-amber-500/30'}`}>
             <div className="flex items-center justify-between mb-4">
-              <Globe className={isTargetDomain ? "text-blue-400" : "text-amber-400"} />
+              <Globe className={IS_TARGET_DOMAIN ? "text-blue-400" : "text-amber-400"} />
               <span className="text-[10px] font-bold text-gray-600 uppercase">Routing</span>
             </div>
-            <h3 className="text-xl font-bold mb-1 truncate">{currentHost}</h3>
+            <h3 className="text-xl font-bold mb-1 truncate">{CURRENT_HOST}</h3>
             <p className="text-xs text-gray-500 mb-4">Hostname Status</p>
-            {isTargetDomain ? (
+            {IS_TARGET_DOMAIN ? (
               <div className="flex items-center gap-2 text-green-400 text-xs font-bold">
                 <CheckCircle size={14} /> Domain Verified
               </div>

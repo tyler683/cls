@@ -5,16 +5,16 @@ import { SiteDataManager } from './SiteDataManager';
 import EditableImage from './EditableImage';
 import DebugPanel from './DebugPanel';
 
+const SOCIALS = [
+  { icon: <Facebook size={18} />, url: 'https://www.facebook.com/profile.php?id=61584560035614', label: 'Facebook' },
+  { icon: <Instagram size={18} />, url: 'https://www.instagram.com/creativelandscapingsolutions/', label: 'Instagram' },
+  { icon: <Linkedin size={18} />, url: '#', label: 'LinkedIn' },
+  { icon: <Twitter size={18} />, url: '#', label: 'X' }
+];
+
 const Footer: React.FC = () => {
   const [isDataManagerOpen, setIsDataManagerOpen] = useState(false);
   const [isDebugOpen, setIsDebugOpen] = useState(false);
-
-  const socials = [
-    { icon: <Facebook size={18} />, url: 'https://www.facebook.com/profile.php?id=61584560035614', label: 'Facebook' },
-    { icon: <Instagram size={18} />, url: 'https://www.instagram.com/creativelandscapingsolutions/', label: 'Instagram' },
-    { icon: <Linkedin size={18} />, url: '#', label: 'LinkedIn' },
-    { icon: <Twitter size={18} />, url: '#', label: 'X' }
-  ];
 
   return (
     <>
@@ -40,7 +40,7 @@ const Footer: React.FC = () => {
               </p>
               
               <div className="flex gap-3 pt-2">
-                {socials.map((social, i) => (
+                {SOCIALS.map((social, i) => (
                   <a 
                     key={i} 
                     href={social.url} 

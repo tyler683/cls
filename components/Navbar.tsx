@@ -4,6 +4,15 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, ArrowRight, Phone } from 'lucide-react';
 import { PageRoute } from '../types';
 
+const NAV_LINKS = [
+  { name: 'Home', path: PageRoute.HOME },
+  { name: 'Services', path: PageRoute.SERVICES },
+  { name: 'Gallery', path: PageRoute.GALLERY },
+  { name: 'Studio', path: PageRoute.STUDIO },
+  { name: 'Community', path: PageRoute.COMMUNITY },
+  { name: 'About', path: PageRoute.ABOUT },
+];
+
 const Navbar: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -14,15 +23,6 @@ const Navbar: React.FC = () => {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
-
-  const navLinks = [
-    { name: 'Home', path: PageRoute.HOME },
-    { name: 'Services', path: PageRoute.SERVICES },
-    { name: 'Gallery', path: PageRoute.GALLERY },
-    { name: 'Studio', path: PageRoute.STUDIO },
-    { name: 'Community', path: PageRoute.COMMUNITY },
-    { name: 'About', path: PageRoute.ABOUT },
-  ];
 
   const isActive = (path: string) => location.pathname === path;
 
@@ -52,7 +52,7 @@ const Navbar: React.FC = () => {
 
               {/* Desktop Navigation */}
               <div className="hidden lg:flex items-center gap-1">
-                {navLinks.map((link) => (
+                {NAV_LINKS.map((link) => (
                   <Link
                     key={link.name}
                     to={link.path}
@@ -97,7 +97,7 @@ const Navbar: React.FC = () => {
             isOpen ? 'max-h-[80vh] opacity-100' : 'max-h-0 opacity-0 pointer-events-none'
           }`}>
             <div className="px-4 pt-2 pb-8 space-y-1">
-              {navLinks.map((link) => (
+              {NAV_LINKS.map((link) => (
                 <Link
                   key={link.name}
                   to={link.path}

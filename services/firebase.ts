@@ -1,5 +1,4 @@
-import * as firebaseApp from 'firebase/app';
-const { initializeApp, getApp, getApps } = firebaseApp as any;
+import { initializeApp, getApp, getApps } from 'firebase/app';
 import { 
   initializeFirestore, 
   getFirestore,

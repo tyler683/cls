@@ -166,7 +166,7 @@ export const CommunityProvider: React.FC<{ children: ReactNode }> = ({ children 
   };
 
   const importPosts = (newPosts: Post[]) => {
-    if (isLive) newPosts.forEach(p => addPostToDb(p));
+    if (isLive) Promise.all(newPosts.map(p => addPostToDb(p))).catch(e => diagnostics.log('error', `importPosts failed for ${newPosts.length} post(s)`, e.message));
     else setPosts(prev => [...newPosts, ...prev]);
   };
 

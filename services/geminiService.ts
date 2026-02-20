@@ -1,5 +1,7 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';import { DesignVisionResponse, ChatMessage } from "../types";
+import { GoogleGenAI, Type } from '@google/genai';
+import { DesignVisionResponse, ChatMessage } from "../types";
 
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? '';
 const SYSTEM_INSTRUCTION = `
 You are the helpful, friendly, and professional virtual assistant for "Creative Landscaping Solutions", a family-owned landscaping company in Kansas City, MO.
 Owner: Tyler Dennison.
@@ -38,7 +40,7 @@ const blobUrlToBase64 = async (url: string): Promise<string> => {
 export const getChatResponse = async (history: ChatMessage[], userMessage: string): Promise<ChatResponse> => {
   try {
     // Initializing Gemini client with API key from environment
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     let latLng = { latitude: 39.0997, longitude: -94.5786 };
     try {
       const pos = await new Promise<GeolocationPosition>((res, rej) => 
@@ -86,7 +88,7 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
 
 export const generateDesignVision = async (userDescription: string): Promise<DesignVisionResponse> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     // Fix: Set maxOutputTokens and thinkingBudget together as per Gemini 3 guidelines
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
@@ -117,7 +119,7 @@ export const generateDesignVision = async (userDescription: string): Promise<Des
 
 export const generateLandscapeImage = async (imageUrl: string, prompt: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     let base64Data = imageUrl;
     if (imageUrl.startsWith('blob:')) base64Data = await blobUrlToBase64(imageUrl);
     const cleanBase64 = base64Data.split(',')[1] || base64Data;
@@ -147,7 +149,7 @@ export const generateLandscapeImage = async (imageUrl: string, prompt: string): 
 
 export const generateLandscapeVideo = async (imageSrc: string, prompt: string): Promise<string> => {
   // Always create a fresh instance for video generation to ensure up-to-date API key
-  const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
   let base64Data = imageSrc;
   if (imageSrc.startsWith('blob:')) base64Data = await blobUrlToBase64(imageSrc);
   const cleanBase64 = base64Data.split(',')[1] || base64Data;
@@ -178,7 +180,7 @@ export const generateLandscapeVideo = async (imageSrc: string, prompt: string): 
   if (!downloadLink) throw new Error("Video generation failed.");
   
   // Appending API key for authenticated video download
-  const response = await fetch(`${downloadLink}&key=${process.env.API_KEY}`);
+  const response = await fetch(`${downloadLink}&key=${GEMINI_API_KEY}`);
   const videoBlob = await response.blob();
   return URL.createObjectURL(videoBlob);
 };
