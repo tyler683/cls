@@ -258,7 +258,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
     }
   };
   
-  const seedCloudData = async () => isConnected && addProjects(DEFAULT_PROJECTS);
+  const seedCloudData = async () => { if (isConnected) await addProjects(DEFAULT_PROJECTS); };
 
   return (
     <GalleryContext.Provider value={{ projects, uploadQueue: pendingProjects, addProject, addProjects, updateProject, deleteProject, importGallery, resetGallery, seedCloudData, retryFailedProjects, isLoading }}>
