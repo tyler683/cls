@@ -19,91 +19,91 @@ import {
 } from 'lucide-react';
 import SEO from '../components/SEO';
 
+const LOCAL_PROJECTS = [
+  { location: "Overland Park", task: "Custom Paver Patio" },
+  { location: "Liberty", task: "Retaining Wall" },
+  { location: "Lee's Summit", task: "Grading & Drainage" },
+  { location: "Leawood", task: "Modern Pool" }
+];
+
+const TESTIMONIALS = [
+  {
+    name: "Sarah Jenkins",
+    location: "Mission Hills, KS",
+    text: "I was honestly dreading the construction mess, but Tyler's crew kept the site spotless every single evening. The natural flagstone work is beautiful—it looks like it has always been a part of the house.",
+    rating: 5
+  },
+  {
+    name: "Mark Thompson",
+    location: "Brookside, MO",
+    text: "Every time we got a heavy rain, our basement was a swamp. Matt came out, walked the property, and actually explained the grading issues instead of just trying to sell me a French drain. We've stayed dry through three big storms now.",
+    rating: 5
+  },
+  {
+    name: "The Hernandez Family",
+    location: "Lee's Summit, MO",
+    text: "Our backyard was a total mud pit after our pool installation. These guys came in, handled the retaining walls and sod in record time, and now my kids can actually play outside again. Worth every penny.",
+    rating: 5
+  }
+];
+
+const TIERS = [
+  {
+    title: "The Foundation",
+    price: "Starting at $5k",
+    icon: <Briefcase className="text-brand-green" />,
+    features: ["Grading & Drainage Correction", "Small Paver Walkway", "Sod Installation"],
+    accent: "bg-gray-50"
+  },
+  {
+    title: "The Oasis",
+    price: "Starting at $15k",
+    icon: <Palmtree className="text-brand-accent" />,
+    features: ["Custom Limestone Patio", "Retaining Wall Tiering", "Native Planting"],
+    accent: "bg-brand-cream border-2 border-brand-accent/20",
+    recommended: true
+  },
+  {
+    title: "The Estate",
+    price: "Starting at $45k",
+    icon: <Gem className="text-brand-green" />,
+    features: ["Outdoor Kitchen & Firepit", "Modern Pool Surround", "Structural Walls"],
+    accent: "bg-brand-dark text-white"
+  }
+];
+
+const SOCIAL_LINKS = [
+  {
+    name: 'Instagram',
+    handle: '@creativelandscapingsolutions',
+    icon: <Instagram />,
+    url: 'https://www.instagram.com/creativelandscapingsolutions/',
+    color: 'hover:bg-[#E4405F]'
+  },
+  {
+    name: 'Facebook',
+    handle: 'Creative Landscaping Solutions',
+    icon: <Facebook />,
+    url: 'https://www.facebook.com/profile.php?id=61584560035614',
+    color: 'hover:bg-[#1877F2]'
+  },
+  {
+    name: 'LinkedIn',
+    handle: 'Creative Landscaping Solutions',
+    icon: <Linkedin />,
+    url: '#',
+    color: 'hover:bg-[#0077B5]'
+  },
+  {
+    name: 'X (Twitter)',
+    handle: '@CreativeLSCKC',
+    icon: <Twitter />,
+    url: '#',
+    color: 'hover:bg-black'
+  }
+];
+
 const Home: React.FC = () => {
-  const localProjects = [
-    { location: "Overland Park", task: "Custom Paver Patio" },
-    { location: "Liberty", task: "Retaining Wall" },
-    { location: "Lee's Summit", task: "Grading & Drainage" },
-    { location: "Leawood", task: "Modern Pool" }
-  ];
-
-  const testimonials = [
-    {
-      name: "Sarah Jenkins",
-      location: "Mission Hills, KS",
-      text: "I was honestly dreading the construction mess, but Tyler's crew kept the site spotless every single evening. The natural flagstone work is beautiful—it looks like it has always been a part of the house.",
-      rating: 5
-    },
-    {
-      name: "Mark Thompson",
-      location: "Brookside, MO",
-      text: "Every time we got a heavy rain, our basement was a swamp. Matt came out, walked the property, and actually explained the grading issues instead of just trying to sell me a French drain. We've stayed dry through three big storms now.",
-      rating: 5
-    },
-    {
-      name: "The Hernandez Family",
-      location: "Lee's Summit, MO",
-      text: "Our backyard was a total mud pit after our pool installation. These guys came in, handled the retaining walls and sod in record time, and now my kids can actually play outside again. Worth every penny.",
-      rating: 5
-    }
-  ];
-
-  const tiers = [
-    {
-      title: "The Foundation",
-      price: "Starting at $5k",
-      icon: <Briefcase className="text-brand-green" />,
-      features: ["Grading & Drainage Correction", "Small Paver Walkway", "Sod Installation"],
-      accent: "bg-gray-50"
-    },
-    {
-      title: "The Oasis",
-      price: "Starting at $15k",
-      icon: <Palmtree className="text-brand-accent" />,
-      features: ["Custom Limestone Patio", "Retaining Wall Tiering", "Native Planting"],
-      accent: "bg-brand-cream border-2 border-brand-accent/20",
-      recommended: true
-    },
-    {
-      title: "The Estate",
-      price: "Starting at $45k",
-      icon: <Gem className="text-brand-green" />,
-      features: ["Outdoor Kitchen & Firepit", "Modern Pool Surround", "Structural Walls"],
-      accent: "bg-brand-dark text-white"
-    }
-  ];
-
-  const socialLinks = [
-    { 
-      name: 'Instagram', 
-      handle: '@creativelandscapingsolutions',
-      icon: <Instagram />, 
-      url: 'https://www.instagram.com/creativelandscapingsolutions/', 
-      color: 'hover:bg-[#E4405F]' 
-    },
-    { 
-      name: 'Facebook', 
-      handle: 'Creative Landscaping Solutions',
-      icon: <Facebook />, 
-      url: 'https://www.facebook.com/profile.php?id=61584560035614', 
-      color: 'hover:bg-[#1877F2]' 
-    },
-    { 
-      name: 'LinkedIn', 
-      handle: 'Creative Landscaping Solutions',
-      icon: <Linkedin />, 
-      url: '#', 
-      color: 'hover:bg-[#0077B5]' 
-    },
-    { 
-      name: 'X (Twitter)', 
-      handle: '@CreativeLSCKC',
-      icon: <Twitter />, 
-      url: '#', 
-      color: 'hover:bg-black' 
-    }
-  ];
-
   return (
     <div className="flex flex-col w-full min-h-screen bg-brand-cream">
       <SEO 
@@ -156,7 +156,7 @@ const Home: React.FC = () => {
       {/* Trust Scroller */}
       <section className="bg-brand-dark py-4 overflow-hidden border-y border-white/5 w-full">
         <div className="flex whitespace-nowrap animate-scroll">
-          {[...localProjects, ...localProjects, ...localProjects].map((p, i) => (
+          {[...LOCAL_PROJECTS, ...LOCAL_PROJECTS, ...LOCAL_PROJECTS].map((p, i) => (
             <div key={i} className="flex items-center gap-6 mx-12 text-white/70 shrink-0">
               <div className="w-1.5 h-1.5 rounded-full bg-brand-accent shadow-[0_0_8px_rgba(188,108,70,0.8)]"></div>
               <span className="font-bold text-[10px] uppercase tracking-widest">
@@ -175,7 +175,7 @@ const Home: React.FC = () => {
              <h3 className="text-4xl font-serif font-bold text-brand-dark">Choose Your Level of Luxury</h3>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
-            {tiers.map((tier, i) => (
+            {TIERS.map((tier, i) => (
               <div key={i} className={`relative p-8 rounded-[2.5rem] border transition-all hover:shadow-xl ${tier.accent}`}>
                 <div className="mb-6 p-4 bg-white/10 rounded-2xl w-fit">
                   {tier.icon}
@@ -204,7 +204,7 @@ const Home: React.FC = () => {
                 <h3 className="text-3xl font-serif font-bold text-brand-dark">What Your Neighbors Are Saying</h3>
              </div>
              <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                {testimonials.map((t, i) => (
+                {TESTIMONIALS.map((t, i) => (
                   <div key={i} className="bg-brand-cream p-8 rounded-[2rem] border border-brand-green/5 shadow-sm">
                     <div className="flex gap-1 mb-4">
                       {[...Array(t.rating)].map((_, j) => <Star key={j} size={16} className="fill-brand-accent text-brand-accent" />)}
@@ -237,7 +237,7 @@ const Home: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-            {socialLinks.map((social) => (
+            {SOCIAL_LINKS.map((social) => (
               <a 
                 key={social.name}
                 href={social.url}
