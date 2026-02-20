@@ -204,4 +204,121 @@ export const uploadMedia = async (input: string | Blob | File, folder = 'uploads
     return input;
   }
   
-  diagnostics.log('info', `uploadMedia: Starting upload to folder \
+  diagnostics.log('info', `uploadMedia: Starting upload to folder ${folder}...`);
+
+  let blob: Blob;
+  if (typeof input === 'string') {
+    const response = await fetch(input);
+    blob = await response.blob();
+  } else {
+    blob = input;
+  }
+
+  const parts = blob.type.split('/');
+  const ext = parts.length === 2 && parts[1] ? parts[1].split(';')[0] : 'bin';
+  const filename = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
+  const storageRef = ref(firestorage, `${folder}/${filename}`);
+
+  return new Promise<string>((resolve, reject) => {
+    const uploadTask = uploadBytesResumable(storageRef, blob);
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress?.(progress);
+      },
+      (error) => {
+        diagnostics.log('error', 'uploadMedia: Upload failed', error.message);
+        reject(error);
+      },
+      async () => {
+        try {
+          const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+          diagnostics.log('success', `uploadMedia: Upload complete. URL: ${downloadURL.substring(0, 50)}...`);
+          resolve(downloadURL);
+        } catch (e) {
+          reject(e);
+        }
+      }
+    );
+  });
+};
+
+export const uploadImage = (input: string | Blob | File): Promise<string> =>
+  uploadMedia(input, 'gallery');
+
+export const generateVideoThumbnail = (videoFile: File): Promise<Blob> =>
+  new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const objectUrl = URL.createObjectURL(videoFile);
+    video.src = objectUrl;
+    video.muted = true;
+    video.playsInline = true;
+    const cleanup = () => URL.revokeObjectURL(objectUrl);
+    const seek = () => {
+      const duration = video.duration;
+      video.currentTime = isFinite(duration) && duration > 0.1 ? Math.min(1, duration * 0.1) : 0;
+    };
+    video.addEventListener('loadedmetadata', seek, { once: true });
+    video.addEventListener('seeked', () => {
+      try {
+        const canvas = document.createElement('canvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 360;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { cleanup(); reject(new Error('Canvas context unavailable')); return; }
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        canvas.toBlob((blob) => {
+          cleanup();
+          if (blob) resolve(blob);
+          else reject(new Error('Thumbnail generation failed'));
+        }, 'image/jpeg', 0.85);
+      } catch (e) { cleanup(); reject(e); }
+    }, { once: true });
+    video.addEventListener('error', (e) => { cleanup(); reject(e); }, { once: true });
+    video.load();
+  });
+
+export const blobUrlToBase64 = (blobUrl: string): Promise<string> =>
+  new Promise((resolve, reject) => {
+    fetch(blobUrl)
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      })
+      .catch(reject);
+  });
+
+export const runSystemHealthCheck = async (): Promise<HealthCheckResult> => {
+  const result: HealthCheckResult = {
+    firestore: { status: 'pending', message: 'Checking...' },
+    storage: { status: 'pending', message: 'Checking...' },
+  };
+
+  if (!db) {
+    result.firestore = { status: 'error', message: 'Not initialized' };
+  } else {
+    try {
+      await getDocs(query(collection(db, 'gallery'), limit(1)));
+      result.firestore = { status: 'ok', message: 'Connected' };
+    } catch (e: any) {
+      result.firestore = { status: 'error', message: e.message || 'Read failed' };
+    }
+  }
+
+  if (!firestorage) {
+    result.storage = { status: 'error', message: 'Not initialized' };
+  } else {
+    try {
+      ref(firestorage, 'health-check');
+      result.storage = { status: 'ok', message: 'Bucket reachable' };
+    } catch (e: any) {
+      result.storage = { status: 'error', message: e.message || 'Unreachable' };
+    }
+  }
+
+  return result;
+};

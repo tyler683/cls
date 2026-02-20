@@ -15,7 +15,7 @@ const Gallery: React.FC = () => {
   const [isImagePickerOpen, setIsImagePickerOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<GalleryItem | null>(null);
 
-  const categories = ['all', 'hardscape', 'pools', 'decks', 'landscaping', 'drainage'];
+  const categories = ['all', 'hardscape', 'pools', 'decks', 'demolition'];
 
   const filteredProjects = projects.filter(project => {
     const matchesCategory = filter === 'all' || project.category === filter;
