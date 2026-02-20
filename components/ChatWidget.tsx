@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, Loader2, Sparkles, Trash2, Minimize2, Mic, MicOff, Volume2, Waves, MapPin, ExternalLink } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { getChatResponse, ChatResponse } from '../services/geminiService';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai';
 interface MessageWithLinks extends ChatMessage {
   links?: { title: string; uri: string }[];
 }
@@ -149,14 +149,23 @@ const ChatWidget: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    const response: ChatResponse = await getChatResponse([...messages, userMsg], userMsg.text);
-    setMessages(prev => [...prev, { 
-      role: 'model', 
-      text: response.text, 
-      timestamp: Date.now(),
-      links: response.groundingLinks
-    }]);
-    setIsLoading(false);
+    try {
+      const response: ChatResponse = await getChatResponse([...messages, userMsg], userMsg.text);
+      setMessages(prev => [...prev, { 
+        role: 'model', 
+        text: response.text, 
+        timestamp: Date.now(),
+        links: response.groundingLinks
+      }]);
+    } catch {
+      setMessages(prev => [...prev, {
+        role: 'model',
+        text: "I'm having trouble connecting right now. Please call Tyler at (816) 337-2654.",
+        timestamp: Date.now()
+      }]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
