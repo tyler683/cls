@@ -3,7 +3,7 @@ import {
   initializeFirestore, 
   getFirestore,
   persistentLocalCache,
-  persistentSingleTabManager,
+  persistentMultipleTabManager,
   onSnapshot, 
   collection, 
   doc, 
@@ -40,7 +40,7 @@ if (IS_FIREBASE_CONFIGURED) {
     
     try {
       db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager(undefined) }),
+        localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
         experimentalForceLongPolling: true,
       });
     } catch (e) {
