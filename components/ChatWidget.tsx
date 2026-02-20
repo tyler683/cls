@@ -76,7 +76,7 @@ const ChatWidget: React.FC = () => {
             scriptProcessor.connect(inputCtx.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-            const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+            const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (audioData && audioContextRef.current) {
               const ctx = audioContextRef.current;
               nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);
