@@ -245,7 +245,7 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
   };
 
   const importGallery = (newItems: GalleryItem[]) => {
-    if (isConnected) newItems.forEach(i => addGalleryItemToDb(i));
+    if (isConnected) Promise.all(newItems.map(i => addGalleryItemToDb(i))).catch(e => diagnostics.log('error', `importGallery failed for ${newItems.length} item(s)`, e.message));
     else setRemoteProjects(prev => [...newItems, ...prev]);
   };
 
