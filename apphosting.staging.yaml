@@ -1,0 +1,20 @@
+# Staging environment overrides — merged on top of apphosting.yaml
+# at build time when the App Hosting backend's Environment name is set to "staging".
+#
+# How to activate:
+#   Firebase Console → App Hosting → <staging backend> → Settings → Environment
+#   Set "Environment name" to: staging
+#
+# Resource values here override the base apphosting.yaml for staging only.
+runConfig:
+  cpu: 1
+  memoryMiB: 512
+  maxInstances: 2
+  minInstances: 0
+  concurrency: 10
+env:
+  - variable: VITE_GEMINI_API_KEY
+    secret: GEMINI_API_KEY_STAGING
+    availability:
+      - BUILD
+      - RUNTIME
