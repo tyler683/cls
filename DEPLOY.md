@@ -91,20 +91,33 @@ If you see this warning in the Firebase Console:
 > *"Database secrets are currently deprecated and use a legacy Firebase token generator.
 > Update your source code with the Firebase Admin SDK."*
 
-**What it means:** Firebase auto-creates a legacy Realtime Database token when a project is first set up.
-This site **does not use Realtime Database** (it uses Firestore), and **no code in this repo uses
-those legacy tokens**. The warning is safe to dismiss by deleting the unused secrets.
+**Where it lives:** Firebase Console → **Realtime Database** → **Data** tab (or the gear icon in
+the Realtime Database section).
 
-**How to fix it (one-time action in the console):**
+**What it means:** Firebase auto-enables a legacy Realtime Database token generator when a project
+is first set up. This site **does not use Realtime Database at all** — it uses Firestore exclusively.
+There is no "delete" button for these deprecated secrets; Firebase removed that UI option.
+
+**How to permanently remove the warning:**
+
+Since this project does not use Realtime Database, the cleanest fix is to delete the
+Realtime Database instance entirely:
 
 1. Open [Firebase Console](https://console.firebase.google.com) → select your project
-2. Click ⚙️ **Project Settings** → **Service accounts** tab
-3. Scroll down to **Database secrets** (legacy section)
-4. Click the **Show** button to reveal the secret, then **Delete** it
-5. The warning will no longer appear
+2. In the left navigation, click **Realtime Database**
+3. Click the ⋮ **more options** menu (three dots) in the top-right of the database panel
+4. Select **Delete database**
+5. Confirm the deletion — the Realtime Database instance is removed, and the warning disappears
 
-> **Note:** This site is a client-side app and cannot use the Firebase Admin SDK
-> (Admin SDK is server-only). The correct client-side SDK (`firebase/app`, `firebase/firestore`,
+> **This is safe.** The CLS app reads/writes exclusively to Firestore. Deleting the unused
+> Realtime Database instance has no effect on the app.
+
+> **Cannot find Realtime Database in the left nav?** It may not be enabled yet in your project.
+> If you don't see it, the warning may resolve on its own as Firebase finishes deprecating the
+> legacy token system — no action needed.
+
+> **Note:** This site is a client-side browser app and cannot use the Firebase Admin SDK
+> (Admin SDK is server-only). The correct client SDK (`firebase/app`, `firebase/firestore`,
 > `firebase/storage`) is already in use.
 
 ---
