@@ -30,4 +30,3 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           channelId: live
           projectId: gen-lang-client-0068569341
-          firebaseServiceAccount: ${{ secrets.WIF_SERVICE_ACCOUNT }}
