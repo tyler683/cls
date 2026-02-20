@@ -20,6 +20,11 @@ import {
   uploadBytesResumable, 
   getDownloadURL 
 } from 'firebase/storage';
+import {
+  getAuth,
+  signInAnonymously,
+  onAuthStateChanged,
+} from 'firebase/auth';
 import { firebaseConfig, IS_FIREBASE_CONFIGURED } from '../firebaseConfig';
 import { Post, Comment, GalleryItem } from '../types';
 import { diagnostics } from './diagnostics';
@@ -32,6 +37,7 @@ export interface HealthCheckResult {
 let db: any = null;
 let firestorage: any = null;
 let isConnected = false;
+let authReady: Promise<void> = Promise.resolve();
 
 if (IS_FIREBASE_CONFIGURED) {
   try {
@@ -54,6 +60,29 @@ if (IS_FIREBASE_CONFIGURED) {
     } else {
       diagnostics.log('warn', 'No storageBucket configured. Storage unavailable.');
     }
+
+    // Initialize Firebase Auth and sign in anonymously so the SDK has a
+    // valid auth token before attempting any Firestore/Storage operations.
+    const auth = getAuth(app);
+    authReady = new Promise<void>((resolve) => {
+      const unsubscribe = onAuthStateChanged(auth, (user) => {
+        if (user) {
+          unsubscribe();
+          diagnostics.log('success', `Firebase Auth ready (uid: ${user.uid})`);
+          resolve();
+        } else {
+          signInAnonymously(auth)
+            .then((cred) => {
+              diagnostics.log('success', `Signed in anonymously (uid: ${cred.user.uid})`);
+            })
+            .catch((err: any) => {
+              diagnostics.log('warn', 'Anonymous sign-in failed. Syncing without auth.', err.message);
+              unsubscribe();
+              resolve();
+            });
+        }
+      });
+    });
     
     isConnected = true;
     diagnostics.log('success', 'Firebase initialized (Stable Long Polling active)');
@@ -66,6 +95,7 @@ if (IS_FIREBASE_CONFIGURED) {
 
 export const getDb = () => db;
 export const isFirebaseReady = () => isConnected;
+export const waitForAuth = () => authReady;
 
 const removeUndefined = (obj: any): any => {
   if (!obj || typeof obj !== 'object') return obj;
