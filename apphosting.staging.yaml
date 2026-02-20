@@ -13,10 +13,6 @@ runConfig:
   minInstances: 0
   concurrency: 10
 env:
-  - variable: VITE_FIREBASE_API_KEY
-    secret: FIREBASE_API_KEY_STAGING
-    availability:
-      - BUILD
   - variable: VITE_GEMINI_API_KEY
     secret: GEMINI_API_KEY_STAGING
     availability:
