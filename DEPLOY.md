@@ -98,6 +98,36 @@ Once Steps 1–3 are complete:
 
 ---
 
+## Troubleshooting — `auth/api-key-expired` in diagnostics
+
+If you see this warning in the browser diagnostics panel:
+> *"Firebase Auth: API key is expired or invalid. Please renew VITE_FIREBASE_API_KEY"*
+> or
+> *"Anonymous sign-in failed. Syncing without auth. Firebase: Error (auth/api-key-expired…)"*
+
+**What it means:** The Firebase Web API key stored in the `VITE_FIREBASE_API_KEY` GitHub
+repository secret is no longer accepted by Firebase Auth. This typically happens when the
+API key is deleted, regenerated, or has API restrictions applied in Google Cloud Console.
+
+**Impact:** The app continues to function in read/write mode because Firestore and Storage
+rules allow unauthenticated access. However, it is best practice to restore a valid auth
+session.
+
+**How to fix:**
+
+1. Open [Firebase Console](https://console.firebase.google.com) → project **`gen-lang-client-0068569341`**
+2. Click ⚙️ gear → **Project settings** → **Your apps** → Web app → copy the `apiKey` value
+3. If the key shown there matches the one already in GitHub Secrets, the key itself may have
+   API restrictions. Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials),
+   find the browser API key for the Firebase project, and ensure **Identity Toolkit API** is
+   in its allowed APIs list (or remove all restrictions for the Firebase Web key).
+4. Update the GitHub secret:
+   - **Settings → Secrets and variables → Actions → `VITE_FIREBASE_API_KEY`** → update the value
+5. Re-run the **"Deploy to Firebase Hosting on merge"** workflow (or merge a new commit) to
+   rebuild and redeploy with the fresh key.
+
+---
+
 ## Troubleshooting — "Database secrets are currently deprecated" warning
 
 If you see this warning in the Firebase Console:
