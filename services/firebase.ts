@@ -41,7 +41,7 @@ if (IS_FIREBASE_CONFIGURED) {
     
     try {
       db = initializeFirestore(app, {
-        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager() }),
+        localCache: persistentLocalCache({ tabManager: persistentSingleTabManager(undefined) }),
         experimentalForceLongPolling: true,
       });
     } catch (e) {
@@ -204,4 +204,104 @@ export const uploadMedia = async (input: string | Blob | File, folder = 'uploads
     return input;
   }
   
-  diagnostics.log('info', `uploadMedia: Starting upload to folder \
+  diagnostics.log('info', `uploadMedia: Starting upload to folder: ${folder}`);
+  const fileName = `${folder}/${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const storageRef = ref(firestorage, fileName);
+
+  let blob: Blob;
+  if (input instanceof Blob) {
+    blob = input;
+  } else if (input.startsWith('data:')) {
+    const res = await fetch(input);
+    blob = await res.blob();
+  } else {
+    const res = await fetch(input);
+    blob = await res.blob();
+  }
+
+  return new Promise((resolve, reject) => {
+    const uploadTask = uploadBytesResumable(storageRef, blob);
+    uploadTask.on(
+      'state_changed',
+      (snapshot) => {
+        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+        onProgress?.(progress);
+      },
+      (error) => {
+        diagnostics.log('error', 'uploadMedia: Upload failed', error.message);
+        reject(error);
+      },
+      async () => {
+        const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+        diagnostics.log('success', `uploadMedia: Upload complete. URL: ${downloadUrl.substring(0, 50)}...`);
+        resolve(downloadUrl);
+      }
+    );
+  });
+};
+
+export const blobUrlToBase64 = async (url: string): Promise<string> => {
+  const response = await fetch(url);
+  const blob = await response.blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
+export const runSystemHealthCheck = async (): Promise<HealthCheckResult> => {
+  const result: HealthCheckResult = {
+    firestore: { status: 'pending', message: 'Not checked' },
+    storage: { status: 'pending', message: 'Not checked' },
+  };
+
+  if (!IS_FIREBASE_CONFIGURED) {
+    result.firestore = { status: 'error', message: 'Firebase not configured' };
+    result.storage = { status: 'error', message: 'Firebase not configured' };
+    return result;
+  }
+
+  // Check Firestore
+  try {
+    const testQuery = query(collection(db, 'gallery'), limit(1));
+    await getDocs(testQuery);
+    result.firestore = { status: 'ok', message: 'Connected successfully' };
+  } catch (error: any) {
+    result.firestore = { status: 'error', message: error.message || 'Connection failed' };
+  }
+
+  // Check Storage
+  if (firestorage) {
+    result.storage = { status: 'ok', message: 'Storage initialized' };
+  } else {
+    result.storage = { status: 'error', message: 'Storage not initialized' };
+  }
+
+  return result;
+};
+
+export const generateVideoThumbnail = (videoFile: File): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const video = document.createElement('video');
+    const url = URL.createObjectURL(videoFile);
+    video.src = url;
+    video.muted = true;
+    video.currentTime = 1;
+    video.onloadeddata = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.videoWidth || 320;
+      canvas.height = video.videoHeight || 240;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) { URL.revokeObjectURL(url); reject(new Error('Canvas context unavailable')); return; }
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Failed to generate thumbnail blob'));
+      }, 'image/jpeg', 0.8);
+    };
+    video.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Video load error')); };
+  });
+};

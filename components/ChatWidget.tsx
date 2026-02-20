@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { MessageSquare, X, Send, Loader2, Sparkles, Trash2, Minimize2, Mic, MicOff, Volume2, Waves, MapPin, ExternalLink } from 'lucide-react';
 import { ChatMessage } from '../types';
 import { getChatResponse, ChatResponse } from '../services/geminiService';
-import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI, Modality, type LiveServerMessage } from '@google/genai';
 interface MessageWithLinks extends ChatMessage {
   links?: { title: string; uri: string }[];
 }
@@ -76,7 +76,7 @@ const ChatWidget: React.FC = () => {
             scriptProcessor.connect(inputCtx.destination);
           },
           onmessage: async (message: LiveServerMessage) => {
-            const audioData = message.serverContent?.modelTurn?.parts[0]?.inlineData?.data;
+            const audioData = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
             if (audioData && audioContextRef.current) {
               const ctx = audioContextRef.current;
               nextStartTimeRef.current = Math.max(nextStartTimeRef.current, ctx.currentTime);

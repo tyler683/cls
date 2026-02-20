@@ -1,14 +1,13 @@
 export const firebaseConfig = {
-  // This pulls the key securely from Firebase App Hosting
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
-  authDomain: "gen-lang-client-0068569341.firebaseapp.com",
-  projectId: "gen-lang-client-0068569341",
-  storageBucket: "gen-lang-client-0068569341.firebasestorage.app",
-  messagingSenderId: "589594676736",
-  appId: "1:589594676736:web:48778aef09485eec3712e5",
-  measurementId: "G-R8M79P4YQQ"
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-export const IS_FIREBASE_CONFIGURED = 
-  Boolean(firebaseConfig.apiKey) && 
+export const IS_FIREBASE_CONFIGURED =
+  Boolean(firebaseConfig.apiKey) &&
   Boolean(firebaseConfig.projectId);

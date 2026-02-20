@@ -1,0 +1,35 @@
+/* Global styles for Creative Landscaping Solutions */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #FBFCF4;
+  color: #0A261C;
+  font-family: 'Montserrat', sans-serif;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* Utility: hide scrollbar */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* AI rendering state */
+.ai-rendering {
+  pointer-events: none;
+  filter: grayscale(0.5);
+  transition: all 0.5s ease;
+}

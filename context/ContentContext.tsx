@@ -1,6 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useEffect } from 'react';
 import { IS_FIREBASE_CONFIGURED } from '../firebaseConfig';
-import { subscribeToContent, updateContentImageInDb, uploadImage, blobUrlToBase64 } from '../services/firebase';
+import { subscribeToContent, updateContentImageInDb, uploadMedia as uploadImage, blobUrlToBase64 } from '../services/firebase';
 
 interface ContentContextType {
   images: Record<string, string>;

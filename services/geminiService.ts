@@ -1,4 +1,5 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';import { DesignVisionResponse, ChatMessage } from "../types";
+import { GoogleGenAI, Type } from '@google/genai';
+import { DesignVisionResponse, ChatMessage } from "../types";
 
 const SYSTEM_INSTRUCTION = `
 You are the helpful, friendly, and professional virtual assistant for "Creative Landscaping Solutions", a family-owned landscaping company in Kansas City, MO.
