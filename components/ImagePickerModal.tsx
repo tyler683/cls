@@ -16,9 +16,6 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
  * Optimizes an image file for web viewing using high-performance canvas APIs.
  */
 const compressImage = async (file: File, onProgress?: (step: string) => void): Promise<string> => {
-  // Support for standard formats
-  const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif'];
-  
   if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
      throw new Error("Apple HEIC/HEIF photos detected. Please download as JPEG or take a screenshot to upload.");
   }
