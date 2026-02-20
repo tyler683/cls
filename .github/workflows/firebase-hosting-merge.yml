@@ -1,4 +1,3 @@
-
 name: Deploy to Firebase Hosting on merge
 on:
   push:
@@ -31,3 +30,4 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           channelId: live
           projectId: gen-lang-client-0068569341
+          firebaseServiceAccount: ''
