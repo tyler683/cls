@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ImageOff, Loader2 } from 'lucide-react';
+import { ImageOff, Loader2, Camera } from 'lucide-react';
 import { useContent } from '../context/ContentContext';
 import { ImagePickerModal } from './ImagePickerModal';
 import { uploadMedia } from '../services/firebase';
@@ -127,6 +127,17 @@ const EditableImage: React.FC<EditableImageProps> = ({
               </div>
             )}
           </div>
+        )}
+
+        {/* Edit Button */}
+        {!readOnly && !isUploading && (
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className={`absolute z-20 ${editButtonClassName || 'bottom-4 right-4'} bg-white/90 hover:bg-white text-brand-dark p-2 rounded-full shadow-lg transition-all opacity-0 group-hover:opacity-100`}
+            title="Change image"
+          >
+            <Camera size={16} />
+          </button>
         )}
 
         {/* Upload Progress Overlay */}
