@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { 
   ArrowRight, 
@@ -15,9 +15,11 @@ import {
   Instagram,
   Linkedin,
   Twitter,
-  ExternalLink
+  ExternalLink,
+  Loader2
 } from 'lucide-react';
 import SEO from '../components/SEO';
+import { useGallery } from '../context/GalleryContext';
 
 const LOCAL_PROJECTS = [
   { location: "Overland Park", task: "Custom Paver Patio" },
@@ -103,7 +105,12 @@ const SOCIAL_LINKS = [
   }
 ];
 
+const PLACEHOLDER_IMAGE = 'https://placehold.co/600x600/cccccc/666666?text=No+Image';
+
 const Home: React.FC = () => {
+  const { projects, isLoading: galleryLoading } = useGallery();
+  const recentProjects = useMemo(() => projects?.slice(0, 6) ?? [], [projects]);
+
   return (
     <div className="flex flex-col w-full min-h-screen bg-brand-cream">
       <SEO 
@@ -219,6 +226,54 @@ const Home: React.FC = () => {
                 ))}
              </div>
           </div>
+        </div>
+      </section>
+
+      {/* Recent Projects from Gallery */}
+      <section className="py-24 bg-brand-cream w-full px-4">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-brand-accent font-bold uppercase tracking-[0.3em] text-[10px] mb-4">Portfolio</h2>
+            <h3 className="text-4xl font-serif font-bold text-brand-dark">Recent Projects</h3>
+          </div>
+          {galleryLoading ? (
+            <div className="flex items-center justify-center py-16">
+              <Loader2 className="w-10 h-10 text-brand-green animate-spin" />
+            </div>
+          ) : recentProjects.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
+                {recentProjects.map((project) => (
+                  <Link
+                    key={project.id}
+                    to="/gallery"
+                    className="group relative aspect-square overflow-hidden rounded-2xl shadow-md hover:shadow-2xl transition-all duration-300 block"
+                  >
+                    <img
+                      src={project.imageUrl?.trim() || PLACEHOLDER_IMAGE}
+                      alt={project.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE; }}
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      <div className="absolute bottom-0 left-0 right-0 p-5 text-white">
+                        <p className="text-[10px] uppercase tracking-wider text-brand-accent mb-1">{project.category}</p>
+                        <h4 className="text-lg font-bold">{project.title}</h4>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+              <div className="text-center">
+                <Link
+                  to="/gallery"
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-brand-dark text-white rounded-xl font-bold hover:bg-brand-green transition-all shadow-lg"
+                >
+                  View Full Gallery <ArrowRight size={18} />
+                </Link>
+              </div>
+            </>
+          ) : null}
         </div>
       </section>
 
