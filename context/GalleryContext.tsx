@@ -67,7 +67,23 @@ const DEFAULT_PROJECTS: GalleryItem[] = [
 
 export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [remoteProjects, setRemoteProjects] = useState<GalleryItem[]>([]);
-  const [pendingProjects, setPendingProjects] = useState<ExtendedGalleryItem[]>([]);
+  const [pendingProjects, setPendingProjects] = useState<ExtendedGalleryItem[]>(() => {
+    // Restore any pending/failed uploads that survived a page reload
+    try {
+      const saved = localStorage.getItem('cls_upload_queue');
+      if (!saved) return [];
+      const items: ExtendedGalleryItem[] = JSON.parse(saved);
+      // Any item that was mid-upload when the page closed is now failed and retryable
+      return items.map(p =>
+        p.uploadStatus === 'uploading'
+          ? { ...p, uploadStatus: 'failed' as UploadStatus, error: 'Upload was interrupted. Click Retry to resume.' }
+          : p
+      ).filter(p => p.uploadStatus !== 'success');
+    } catch (e) {
+      diagnostics.log('warn', 'Failed to restore upload queue from storage', String(e));
+      return [];
+    }
+  });
   const [isConnected, setIsConnected] = useState(IS_FIREBASE_CONFIGURED);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -77,6 +93,22 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
     const filteredPending = pendingProjects.filter(p => !remoteIds.has(p.id));
     return [...filteredPending, ...remoteProjects];
   }, [pendingProjects, remoteProjects]);
+
+  // Persist the upload queue so interrupted uploads can be retried after page reload
+  useEffect(() => {
+    if (isConnected) {
+      try {
+        const queueToSave = pendingProjects.filter(p => p.uploadStatus !== 'success');
+        if (queueToSave.length > 0) {
+          localStorage.setItem('cls_upload_queue', JSON.stringify(queueToSave));
+        } else {
+          localStorage.removeItem('cls_upload_queue');
+        }
+      } catch (e) {
+        diagnostics.log('warn', 'Failed to persist upload queue to storage', String(e));
+      }
+    }
+  }, [pendingProjects, isConnected]);
 
   useEffect(() => {
     if (isConnected) {
