@@ -7,6 +7,17 @@ import PageHero from '../components/PageHero';
 import { ImagePickerModal } from '../components/ImagePickerModal';
 import SEO from '../components/SEO';
 
+const ANIMATION_STEPS = [
+  "Analyzing terrain topography...",
+  "Laying virtual paver foundation...",
+  "Planting native Missouri perennials...",
+  "Adjusting golden hour lighting...",
+  "Finalizing cinematic walkthrough...",
+  "Exporting 4K visualization..."
+];
+
+const STYLE_OPTIONS = ['Modern', 'Rustic', 'Oasis', 'Traditional'] as const;
+
 const DesignStudio: React.FC = () => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [generatedImage, setGeneratedImage] = useState<string | null>(null);
@@ -23,15 +34,6 @@ const DesignStudio: React.FC = () => {
   const [showOriginal, setShowOriginal] = useState(false);
   
   const navigate = useNavigate();
-
-  const animationSteps = [
-    "Analyzing terrain topography...",
-    "Laying virtual paver foundation...",
-    "Planting native Missouri perennials...",
-    "Adjusting golden hour lighting...",
-    "Finalizing cinematic walkthrough...",
-    "Exporting 4K visualization..."
-  ];
 
   useEffect(() => {
     const checkKeyStatus = async () => {
@@ -54,7 +56,7 @@ const DesignStudio: React.FC = () => {
     let interval: any;
     if (isAnimating) {
       interval = setInterval(() => {
-        setAnimationStep(prev => (prev + 1) % animationSteps.length);
+        setAnimationStep(prev => (prev + 1) % ANIMATION_STEPS.length);
       }, 10000);
     }
     return () => clearInterval(interval);
@@ -189,7 +191,7 @@ const DesignStudio: React.FC = () => {
                 <div>
                   <label className="block text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-3">2. Choose Style</label>
                   <div className="grid grid-cols-2 gap-2">
-                    {['Modern', 'Rustic', 'Oasis', 'Traditional'].map(s => (
+                    {STYLE_OPTIONS.map(s => (
                       <button key={s} onClick={() => setStyle(s.toLowerCase())} className={`px-4 py-3 rounded-xl font-bold border-2 text-xs transition-all ${style === s.toLowerCase() ? 'bg-brand-green border-brand-green text-white shadow-lg' : 'bg-white border-gray-100 text-gray-400 hover:border-brand-green/20'}`}>{s}</button>
                     ))}
                   </div>
@@ -236,7 +238,7 @@ const DesignStudio: React.FC = () => {
                    </div>
                    <h3 className="text-3xl font-serif font-bold text-white mb-4">Rendering 4K Walkthrough</h3>
                    <div className="w-full max-w-sm space-y-4">
-                      {animationSteps.map((step, i) => (
+                      {ANIMATION_STEPS.map((step, i) => (
                         <div key={i} className={`flex items-center gap-4 transition-all duration-700 ${i === animationStep ? 'opacity-100 translate-x-2' : 'opacity-20'}`}>
                           <div className={`w-2 h-2 rounded-full ${i === animationStep ? 'bg-brand-accent shadow-[0_0_10px_rgba(188,108,70,0.8)]' : 'bg-white'}`}></div>
                           <span className="text-[10px] font-bold text-white uppercase tracking-[0.2em]">{step}</span>

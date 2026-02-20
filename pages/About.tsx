@@ -4,13 +4,12 @@ import { Mail, Phone } from 'lucide-react';
 import PageHero from '../components/PageHero';
 import SEO from '../components/SEO';
 
-const About: React.FC = () => {
-  // High-Quality Verified Static URLs
-  const HERO_IMAGE = "https://res.cloudinary.com/clsllc/image/upload/v1764902253/20250810_120347_wmjcap.jpg";
-  const STORY_IMAGE = "https://res.cloudinary.com/clsllc/image/upload/v1771189604/skidsteergirls_i2iqdl.jpg";
-  const TYLER_IMAGE = "https://res.cloudinary.com/clsllc/image/upload/v1766382368/Tyler_Dennison_pnrgof_uinic3.jpg";
-  const MATTHEW_IMAGE = "https://res.cloudinary.com/clsllc/image/upload/v1771148778/IMG_0372_npkda9.jpg";
+const HERO_IMAGE = "https://res.cloudinary.com/clsllc/image/upload/v1764902253/20250810_120347_wmjcap.jpg";
+const STORY_IMAGE = "https://res.cloudinary.com/clsllc/image/upload/v1771189604/skidsteergirls_i2iqdl.jpg";
+const TYLER_IMAGE = "https://res.cloudinary.com/clsllc/image/upload/v1766382368/Tyler_Dennison_pnrgof_uinic3.jpg";
+const MATTHEW_IMAGE = "https://res.cloudinary.com/clsllc/image/upload/v1771148778/IMG_0372_npkda9.jpg";
 
+const About: React.FC = () => {
   return (
     <div className="bg-brand-cream min-h-screen">
       <SEO 
