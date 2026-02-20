@@ -85,6 +85,30 @@ Once Steps 1–3 are complete:
 
 ---
 
+## Troubleshooting — "Database secrets are currently deprecated" warning
+
+If you see this warning in the Firebase Console:
+> *"Database secrets are currently deprecated and use a legacy Firebase token generator.
+> Update your source code with the Firebase Admin SDK."*
+
+**What it means:** Firebase auto-creates a legacy Realtime Database token when a project is first set up.
+This site **does not use Realtime Database** (it uses Firestore), and **no code in this repo uses
+those legacy tokens**. The warning is safe to dismiss by deleting the unused secrets.
+
+**How to fix it (one-time action in the console):**
+
+1. Open [Firebase Console](https://console.firebase.google.com) → select your project
+2. Click ⚙️ **Project Settings** → **Service accounts** tab
+3. Scroll down to **Database secrets** (legacy section)
+4. Click the **Show** button to reveal the secret, then **Delete** it
+5. The warning will no longer appear
+
+> **Note:** This site is a client-side app and cannot use the Firebase Admin SDK
+> (Admin SDK is server-only). The correct client-side SDK (`firebase/app`, `firebase/firestore`,
+> `firebase/storage`) is already in use.
+
+---
+
 ## Quick reference — what's already done in the repo
 
 | ✅ | What | File |
