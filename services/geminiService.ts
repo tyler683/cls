@@ -129,14 +129,17 @@ export const generateLandscapeImage = async (imageUrl: string, prompt: string): 
     const cleanBase64 = base64Data.split(',')[1] || base64Data;
     const mimeType = base64Data.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/)?.[1] || 'image/jpeg';
     
-    // Using gemini-2.5-flash-image for image editing/generation tasks
+    // Using gemini-2.0-flash-exp which supports multimodal image output
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-2.0-flash-exp',
       contents: {
         parts: [
           { inlineData: { data: cleanBase64, mimeType } },
           { text: `Redesign landscape: ${prompt}. Cinematic, photorealistic, premium hardscaping design.` },
         ],
+      },
+      config: {
+        responseModalities: ['IMAGE', 'TEXT'],
       },
     });
     for (const cand of response.candidates || []) {
