@@ -1,7 +1,54 @@
 import { GoogleGenAI, Type } from '@google/genai';
 import { DesignVisionResponse, ChatMessage } from "../types";
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY ?? '';
+// Up to three Gemini API keys — rotate round-robin and fall back on quota errors.
+const GEMINI_API_KEYS: string[] = [
+  import.meta.env.VITE_GEMINI_API_KEY,
+  import.meta.env.VITE_GEMINI_API_KEY_2,
+  import.meta.env.VITE_GEMINI_API_KEY_3,
+].filter(Boolean) as string[];
+
+let currentKeyIndex = 0;
+
+/** Returns the next API key in round-robin order. */
+const nextKey = (): string => {
+  if (GEMINI_API_KEYS.length === 0) return '';
+  const key = GEMINI_API_KEYS[currentKeyIndex % GEMINI_API_KEYS.length];
+  currentKeyIndex = (currentKeyIndex + 1) % GEMINI_API_KEYS.length;
+  return key;
+};
+
+const isQuotaError = (err: unknown): boolean => {
+  const e = err as any;
+  if (e?.status === 429) return true;
+  if (typeof e?.code === 'string' && e.code.toUpperCase() === 'RESOURCE_EXHAUSTED') return true;
+  const msg = String(e?.message ?? '').toLowerCase();
+  return msg.includes('429') || msg.includes('resource_exhausted') || msg.includes('quota exceeded');
+};
+
+/**
+ * Calls `fn` with each available API key in order, moving to the next key only
+ * when the current one returns a quota / rate-limit error.  Non-quota errors are
+ * rethrown immediately so callers receive meaningful messages.
+ */
+const withKeyFallback = async <T>(fn: (apiKey: string) => Promise<T>): Promise<T> => {
+  if (GEMINI_API_KEYS.length === 0) return fn('');
+  let lastErr: unknown;
+  const start = currentKeyIndex;
+  for (let i = 0; i < GEMINI_API_KEYS.length; i++) {
+    const key = GEMINI_API_KEYS[(start + i) % GEMINI_API_KEYS.length];
+    try {
+      const result = await fn(key);
+      currentKeyIndex = (start + i + 1) % GEMINI_API_KEYS.length;
+      return result;
+    } catch (err) {
+      if (!isQuotaError(err)) throw err;
+      lastErr = err;
+    }
+  }
+  throw new Error(`All ${GEMINI_API_KEYS.length} Gemini API key(s) exhausted due to rate limits.`, { cause: lastErr });
+};
+
 const SYSTEM_INSTRUCTION = `
 You are the helpful, friendly, and professional virtual assistant for "Creative Landscaping Solutions", a family-owned landscaping company in Kansas City, MO.
 Owner: Tyler Dennison.
@@ -41,8 +88,6 @@ const MAX_HISTORY_MESSAGES = 10;
 
 export const getChatResponse = async (history: ChatMessage[], userMessage: string): Promise<ChatResponse> => {
   try {
-    // Initializing Gemini client with API key from environment
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     let latLng = { latitude: 39.0997, longitude: -94.5786 };
     try {
       const pos = await new Promise<GeolocationPosition>((res, rej) => 
@@ -53,23 +98,26 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
 
     // Use gemini-2.0-flash for cost-effective chat; limit history to reduce tokens per call
     const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES);
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: [
-        ...trimmedHistory.map(msg => ({
-          role: msg.role === 'user' ? 'user' : 'model',
-          parts: [{ text: msg.text }]
-        })),
-        { role: 'user', parts: [{ text: userMessage }] }
-      ],
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        maxOutputTokens: 1024,
-        tools: [{ googleSearch: {} }],
-        toolConfig: {
-          retrievalConfig: { latLng }
-        }
-      },
+    const response = await withKeyFallback((apiKey) => {
+      const ai = new GoogleGenAI({ apiKey });
+      return ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: [
+          ...trimmedHistory.map(msg => ({
+            role: msg.role === 'user' ? 'user' : 'model',
+            parts: [{ text: msg.text }]
+          })),
+          { role: 'user', parts: [{ text: userMessage }] }
+        ],
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          maxOutputTokens: 1024,
+          tools: [{ googleSearch: {} }],
+          toolConfig: {
+            retrievalConfig: { latLng }
+          }
+        },
+      });
     });
 
     const links: { title: string; uri: string }[] = [];
@@ -92,28 +140,30 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
 
 export const generateDesignVision = async (userDescription: string): Promise<DesignVisionResponse> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     // Use gemini-2.0-flash for cost-effective design vision generation
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: `Design concept for: "${userDescription}". Consider KC soil and climate.`,
-      config: {
-        systemInstruction: "You are a professional landscape architect specializing in Kansas City residential design.",
-        maxOutputTokens: 2000,
-        thinkingConfig: { thinkingBudget: 1000 },
-        responseMimeType: "application/json",
-        responseSchema: {
-          type: Type.OBJECT,
-          properties: {
-            conceptName: { type: Type.STRING },
-            mood: { type: Type.STRING },
-            plantPalette: { type: Type.ARRAY, items: { type: Type.STRING } },
-            features: { type: Type.ARRAY, items: { type: Type.STRING } },
-            maintenanceLevel: { type: Type.STRING },
+    const response = await withKeyFallback((apiKey) => {
+      const ai = new GoogleGenAI({ apiKey });
+      return ai.models.generateContent({
+        model: "gemini-2.0-flash",
+        contents: `Design concept for: "${userDescription}". Consider KC soil and climate.`,
+        config: {
+          systemInstruction: "You are a professional landscape architect specializing in Kansas City residential design.",
+          maxOutputTokens: 2000,
+          thinkingConfig: { thinkingBudget: 1000 },
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              conceptName: { type: Type.STRING },
+              mood: { type: Type.STRING },
+              plantPalette: { type: Type.ARRAY, items: { type: Type.STRING } },
+              features: { type: Type.ARRAY, items: { type: Type.STRING } },
+              maintenanceLevel: { type: Type.STRING },
+            },
+            required: ["conceptName", "mood", "plantPalette", "features", "maintenanceLevel"],
           },
-          required: ["conceptName", "mood", "plantPalette", "features", "maintenanceLevel"],
         },
-      },
+      });
     });
     return JSON.parse(response.text || '{}') as DesignVisionResponse;
   } catch (error) {
@@ -123,24 +173,26 @@ export const generateDesignVision = async (userDescription: string): Promise<Des
 
 export const generateLandscapeImage = async (imageUrl: string, prompt: string): Promise<string> => {
   try {
-    const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
     let base64Data = imageUrl;
     if (imageUrl.startsWith('blob:')) base64Data = await blobUrlToBase64(imageUrl);
     const cleanBase64 = base64Data.split(',')[1] || base64Data;
     const mimeType = base64Data.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/)?.[1] || 'image/jpeg';
     
     // Using gemini-2.0-flash-exp which supports multimodal image output
-    const response = await ai.models.generateContent({
-      model: 'gemini-2.0-flash-exp',
-      contents: {
-        parts: [
-          { inlineData: { data: cleanBase64, mimeType } },
-          { text: `Redesign landscape: ${prompt}. Cinematic, photorealistic, premium hardscaping design.` },
-        ],
-      },
-      config: {
-        responseModalities: ['IMAGE', 'TEXT'],
-      },
+    const response = await withKeyFallback((apiKey) => {
+      const ai = new GoogleGenAI({ apiKey });
+      return ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: {
+          parts: [
+            { inlineData: { data: cleanBase64, mimeType } },
+            { text: `Redesign landscape: ${prompt}. Cinematic, photorealistic, premium hardscaping design.` },
+          ],
+        },
+        config: {
+          responseModalities: ['IMAGE', 'TEXT'],
+        },
+      });
     });
     for (const cand of response.candidates || []) {
       for (const part of cand.content?.parts || []) {
@@ -155,12 +207,14 @@ export const generateLandscapeImage = async (imageUrl: string, prompt: string): 
 };
 
 export const generateLandscapeVideo = async (imageSrc: string, prompt: string): Promise<string> => {
-  // Always create a fresh instance for video generation to ensure up-to-date API key
-  const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
   let base64Data = imageSrc;
   if (imageSrc.startsWith('blob:')) base64Data = await blobUrlToBase64(imageSrc);
   const cleanBase64 = base64Data.split(',')[1] || base64Data;
   const mimeType = base64Data.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/)?.[1] || 'image/jpeg';
+
+  // Pin the key for the entire multi-step video operation so polling uses the same key.
+  const apiKey = nextKey();
+  const ai = new GoogleGenAI({ apiKey });
 
   // Using veo-3.1-fast-generate-preview for high-quality video generation
   let operation = await ai.models.generateVideos({
@@ -187,7 +241,7 @@ export const generateLandscapeVideo = async (imageSrc: string, prompt: string): 
   if (!downloadLink) throw new Error("Video generation failed.");
   
   // Appending API key for authenticated video download
-  const response = await fetch(`${downloadLink}&key=${GEMINI_API_KEY}`);
+  const response = await fetch(`${downloadLink}&key=${apiKey}`);
   const videoBlob = await response.blob();
   return URL.createObjectURL(videoBlob);
 };

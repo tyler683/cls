@@ -5,19 +5,23 @@ you need to take **outside the repo** before merging to `main`.
 
 ---
 
-## Overview — the 3 API keys
+## Overview — the API keys
 
-This project uses **3 API keys** total:
+This project uses these API keys:
 
 | # | Key name | Where it lives | What it controls |
 |---|---|---|---|
 | 1 | `VITE_FIREBASE_API_KEY` | GitHub repo secret | Firebase Auth, Firestore, Storage |
-| 2 | `GEMINI_API_KEY` | GitHub repo secret (for static build) + Cloud Secret Manager (for App Hosting) | Gemini AI chat, design studio (production) |
-| 3 | `GEMINI_API_KEY_STAGING` | Cloud Secret Manager only | Gemini AI (staging App Hosting backend, optional) |
+| 2 | `GEMINI_API_KEY` | GitHub repo secret + Cloud Secret Manager | Gemini AI — primary key (required) |
+| 3 | `GEMINI_API_KEY_2` | GitHub repo secret + Cloud Secret Manager | Gemini AI — second key (optional, rotation) |
+| 4 | `GEMINI_API_KEY_3` | GitHub repo secret + Cloud Secret Manager | Gemini AI — third key (optional, rotation) |
 
-**Key rule:** key #1 and key #2 must both be present as **GitHub Secrets** so the GitHub
-Actions build can inject them as `VITE_FIREBASE_API_KEY` and `VITE_GEMINI_API_KEY`
-respectively. Without both, either Firebase or the AI features will be missing.
+**Key rule:** `VITE_FIREBASE_API_KEY` and `GEMINI_API_KEY` must both be present as
+**GitHub Secrets** so the GitHub Actions build can inject them.  The two extra Gemini
+keys (`GEMINI_API_KEY_2`, `GEMINI_API_KEY_3`) are **optional** but recommended —
+the app rotates round-robin across all provided keys and falls back to the next key
+automatically whenever one hits a quota or rate-limit error, keeping AI features
+running continuously.
 
 ---
 
@@ -39,32 +43,44 @@ The app reads `VITE_FIREBASE_API_KEY` at **build time** via GitHub Actions.
 
 ---
 
-## Step 2 — GitHub Repository Secret: Gemini API key
+## Step 2 — GitHub Repository Secret: Gemini API key(s)
 
 The chat widget and AI Design Studio need `VITE_GEMINI_API_KEY` at **build time**.
 The GitHub Actions workflow reads it from a GitHub secret named `GEMINI_API_KEY`.
+You can optionally add two more keys (`GEMINI_API_KEY_2`, `GEMINI_API_KEY_3`) — the
+app will rotate across all provided keys and fall back automatically on rate-limit errors.
 
-1. Get your Gemini API key from https://aistudio.google.com/app/apikey
-2. Add it as a GitHub repository secret:
-   - **Settings → Secrets and variables → Actions → New repository secret**
-   - Name: `GEMINI_API_KEY`
-   - Value: your Gemini API key
+1. Get your Gemini API key(s) from https://aistudio.google.com/app/apikey
+2. Add them as GitHub repository secrets (**Settings → Secrets and variables → Actions**):
 
-> **Note:** This is the same key you create in Step 3 for Secret Manager. You need it
-> in **both** places: GitHub Secrets (for the static Hosting build via GitHub Actions)
-> and Secret Manager (for Firebase App Hosting, if used).
+   | Secret name | Value | Required? |
+   |---|---|---|
+   | `GEMINI_API_KEY` | First Gemini API key | ✅ Required |
+   | `GEMINI_API_KEY_2` | Second Gemini API key | Optional |
+   | `GEMINI_API_KEY_3` | Third Gemini API key | Optional |
+
+> **Note:** These are the same keys you create in Step 3 for Secret Manager. Each key
+> must be in **both** places: GitHub Secrets (for the static Hosting build via GitHub
+> Actions) and Secret Manager (for Firebase App Hosting, if used).
 
 ---
 
-## Step 3 — Secret Manager: Create the Gemini API key secret
+## Step 3 — Secret Manager: Create the Gemini API key secret(s)
 
 `apphosting.yaml` references Secret Manager secrets for Firebase App Hosting deployments.
 
 1. Open [Google Cloud Console → Secret Manager](https://console.cloud.google.com/security/secret-manager)
    (make sure project `gen-lang-client-0068569341` is selected)
-2. Create secret named `GEMINI_API_KEY` (same value as Step 2)
-3. Create secret named `FIREBASE_API_KEY` (same value as Step 1)
-4. For each secret, grant the App Hosting service account **Secret Manager Secret Accessor** role:
+2. Create the following secrets:
+
+   | Secret name | Value | Required? |
+   |---|---|---|
+   | `GEMINI_API_KEY` | First Gemini API key | ✅ Required |
+   | `GEMINI_API_KEY_2` | Second Gemini API key | Optional |
+   | `GEMINI_API_KEY_3` | Third Gemini API key | Optional |
+   | `FIREBASE_API_KEY` | Firebase Web API key (Step 1) | ✅ Required |
+
+3. For each secret, grant the App Hosting service account **Secret Manager Secret Accessor** role:
    - Principal: `service-<PROJECT_NUMBER>@gcp-sa-firebaseapphosting.iam.gserviceaccount.com`
 
 ---
@@ -75,6 +91,8 @@ The GitHub Actions workflow reads it from a GitHub secret named `GEMINI_API_KEY`
 |---|---|
 | `VITE_FIREBASE_API_KEY` | Firebase Web API key — see Step 1 |
 | `GEMINI_API_KEY` | Gemini AI API key — see Step 2 |
+| `GEMINI_API_KEY_2` | Second Gemini API key (optional) |
+| `GEMINI_API_KEY_3` | Third Gemini API key (optional) |
 | `WIF_PROVIDER` | Workload Identity Provider resource name |
 | `WIF_SERVICE_ACCOUNT` | Service account email |
 
@@ -84,7 +102,13 @@ The GitHub Actions workflow reads it from a GitHub secret named `GEMINI_API_KEY`
 
 1. Firebase Console → **App Hosting** → staging backend → **Settings** → **Environment**
 2. Set **Environment name** to: `staging`
-3. In Secret Manager, create `GEMINI_API_KEY_STAGING` and grant service account access
+3. In Secret Manager, create the staging key secrets and grant service account access:
+
+   | Secret name | Value |
+   |---|---|
+   | `GEMINI_API_KEY_STAGING` | First Gemini key for staging |
+   | `GEMINI_API_KEY_2_STAGING` | Second Gemini key for staging (optional) |
+   | `GEMINI_API_KEY_3_STAGING` | Third Gemini key for staging (optional) |
 
 ---
 
