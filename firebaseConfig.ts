@@ -1,9 +1,7 @@
 // Firebase API keys are public identifiers — safe to embed in client code.
 // Security is enforced by Firestore & Storage Rules, not by hiding this key.
-// Get your apiKey from: Firebase Console → Project Settings → Your apps → Web app
-// For local development, set VITE_FIREBASE_API_KEY in a .env.local file (see .env.example).
 export const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY ?? '',
+  apiKey: 'AIzaSyCvN4f69X2pOifhEOjgju_gUEfWHh4QQpY',
   authDomain: "gen-lang-client-0068569341.firebaseapp.com",
   projectId: "gen-lang-client-0068569341",
   storageBucket: "gen-lang-client-0068569341.firebasestorage.app",
