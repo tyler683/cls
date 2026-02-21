@@ -79,6 +79,8 @@ if (IS_FIREBASE_CONFIGURED) {
               const code: string = err.code || '';
               if (code.startsWith('auth/api-key-expired') || code.startsWith('auth/invalid-api-key')) {
                 diagnostics.log('warn', 'Firebase Auth: API key is expired or invalid. Please renew VITE_FIREBASE_API_KEY (see DEPLOY.md — Troubleshooting: auth/api-key-expired). Continuing without auth — reads/writes use open Firestore rules.', err.message);
+              } else if (code === 'auth/configuration-not-found') {
+                diagnostics.log('warn', 'Firebase Auth: Anonymous sign-in provider is not enabled. Go to Firebase Console → Authentication → Sign-in method → Anonymous → Enable (see DEPLOY.md — Troubleshooting: auth/configuration-not-found). Continuing without auth.', err.message);
               } else {
                 diagnostics.log('warn', 'Anonymous sign-in failed. Syncing without auth.', err.message);
               }
