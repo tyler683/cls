@@ -12,3 +12,13 @@ env:
     availability:
       - BUILD
       - RUNTIME
+  - variable: VITE_GEMINI_API_KEY_2
+    secret: GEMINI_API_KEY_2
+    availability:
+      - BUILD
+      - RUNTIME
+  - variable: VITE_GEMINI_API_KEY_3
+    secret: GEMINI_API_KEY_3
+    availability:
+      - BUILD
+      - RUNTIME
