@@ -37,17 +37,19 @@ const DesignStudio: React.FC = () => {
 
   useEffect(() => {
     const checkKeyStatus = async () => {
-      try {
-        const aistudio = (window as any).aistudio;
-        if (aistudio && typeof aistudio.hasSelectedApiKey === 'function') {
+      const aistudio = (window as any).aistudio;
+      if (aistudio && typeof aistudio.hasSelectedApiKey === 'function') {
+        // Running inside the AI Studio preview frame — check bridge key selection.
+        try {
           const selected = await aistudio.hasSelectedApiKey();
           setHasKey(selected);
-        } else {
+        } catch (e) {
+          // Bridge is present but threw — signal it's blocked.
           setIsBridgeBlocked(true);
         }
-      } catch (e) {
-        setIsBridgeBlocked(true);
       }
+      // If window.aistudio is simply not available we are in a regular browser.
+      // Image generation uses VITE_GEMINI_API_KEY directly and needs no bridge.
     };
     checkKeyStatus();
   }, []);
