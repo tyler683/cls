@@ -103,4 +103,3 @@ const ProjectGallery = ({ isAdmin = false }) => {
 };
 
 export default ProjectGallery;
-export default Gallery;
