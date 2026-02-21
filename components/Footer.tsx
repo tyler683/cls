@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { Phone, Mail, MapPin, Database, Activity, Facebook, Instagram, Linkedin, Twitter } from 'lucide-react';
+import { Phone, Mail, MapPin, Database, Activity, Facebook, Instagram } from 'lucide-react';
 import { SiteDataManager } from './SiteDataManager';
 import EditableImage from './EditableImage';
 import DebugPanel from './DebugPanel';
@@ -8,8 +8,6 @@ import DebugPanel from './DebugPanel';
 const SOCIALS = [
   { icon: <Facebook size={18} />, url: 'https://www.facebook.com/profile.php?id=61584560035614', label: 'Facebook' },
   { icon: <Instagram size={18} />, url: 'https://www.instagram.com/creativelandscapingsolutions/', label: 'Instagram' },
-  { icon: <Linkedin size={18} />, url: '#', label: 'LinkedIn' },
-  { icon: <Twitter size={18} />, url: '#', label: 'X' }
 ];
 
 const Footer: React.FC = () => {

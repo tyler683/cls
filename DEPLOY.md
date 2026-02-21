@@ -5,12 +5,25 @@ you need to take **outside the repo** before merging to `main`.
 
 ---
 
-## Step 1 — GitHub Repository Secret: Set the Firebase API key
+## Overview — the 3 API keys
 
-The app reads `VITE_FIREBASE_API_KEY` at **build time** via GitHub Actions. It must be
-stored as a **GitHub repository secret** — not in App Hosting's environment panel.
-(This is a public identifier, not a secret, but GitHub Secrets is the correct place
-because it is injected into the GitHub Actions build step.)
+This project uses **3 API keys** total:
+
+| # | Key name | Where it lives | What it controls |
+|---|---|---|---|
+| 1 | `VITE_FIREBASE_API_KEY` | GitHub repo secret | Firebase Auth, Firestore, Storage |
+| 2 | `GEMINI_API_KEY` | GitHub repo secret (for static build) + Cloud Secret Manager (for App Hosting) | Gemini AI chat, design studio (production) |
+| 3 | `GEMINI_API_KEY_STAGING` | Cloud Secret Manager only | Gemini AI (staging App Hosting backend, optional) |
+
+**Key rule:** key #1 and key #2 must both be present as **GitHub Secrets** so the GitHub
+Actions build can inject them as `VITE_FIREBASE_API_KEY` and `VITE_GEMINI_API_KEY`
+respectively. Without both, either Firebase or the AI features will be missing.
+
+---
+
+## Step 1 — GitHub Repository Secret: Firebase API key
+
+The app reads `VITE_FIREBASE_API_KEY` at **build time** via GitHub Actions.
 
 1. Find your Firebase Web API key:
    - Open [Firebase Console](https://console.firebase.google.com)
@@ -23,145 +36,87 @@ because it is injected into the GitHub Actions build step.)
    - Click **New repository secret**
    - Name: `VITE_FIREBASE_API_KEY`
    - Value: the `apiKey` you copied above
-   - Click **Add secret**
-
-> **Why not App Hosting?** This project deploys via Firebase Hosting (static files built
-> by GitHub Actions and uploaded to the Firebase CDN). The `apphosting.yaml` file is
-> present for a possible App Hosting backend, but the production site at
-> `creativelandscapingsolutions.com` is served by Firebase Hosting. Vite inlines the
-> `VITE_*` env vars at **build time** inside the GitHub Actions runner, so the value
-> must be available there as a GitHub secret.
 
 ---
 
-## Step 2 — Secret Manager: Create the Gemini API key secret
+## Step 2 — GitHub Repository Secret: Gemini API key
 
-`apphosting.yaml` references a Secret Manager secret named `GEMINI_API_KEY`.
-This is the **real** AI API key that must stay private.
+The chat widget and AI Design Studio need `VITE_GEMINI_API_KEY` at **build time**.
+The GitHub Actions workflow reads it from a GitHub secret named `GEMINI_API_KEY`.
+
+1. Get your Gemini API key from https://aistudio.google.com/app/apikey
+2. Add it as a GitHub repository secret:
+   - **Settings → Secrets and variables → Actions → New repository secret**
+   - Name: `GEMINI_API_KEY`
+   - Value: your Gemini API key
+
+> **Note:** This is the same key you create in Step 3 for Secret Manager. You need it
+> in **both** places: GitHub Secrets (for the static Hosting build via GitHub Actions)
+> and Secret Manager (for Firebase App Hosting, if used).
+
+---
+
+## Step 3 — Secret Manager: Create the Gemini API key secret
+
+`apphosting.yaml` references Secret Manager secrets for Firebase App Hosting deployments.
 
 1. Open [Google Cloud Console → Secret Manager](https://console.cloud.google.com/security/secret-manager)
-   (make sure the correct project `gen-lang-client-0068569341` is selected)
-2. Click **+ Create Secret**
-3. Name: `GEMINI_API_KEY`
-4. Value: your Gemini API key (get one from https://aistudio.google.com/app/apikey)
-5. Click **Create Secret**
-6. Grant the App Hosting service account access:
-   - On the secret detail page → **Permissions** tab → **Grant Access**
+   (make sure project `gen-lang-client-0068569341` is selected)
+2. Create secret named `GEMINI_API_KEY` (same value as Step 2)
+3. Create secret named `FIREBASE_API_KEY` (same value as Step 1)
+4. For each secret, grant the App Hosting service account **Secret Manager Secret Accessor** role:
    - Principal: `service-<PROJECT_NUMBER>@gcp-sa-firebaseapphosting.iam.gserviceaccount.com`
-   - Role: **Secret Manager Secret Accessor**
 
 ---
 
-## Step 3 — GitHub Secrets: Set CI/CD credentials
-
-The `firebase-hosting-merge.yml` workflow uses Workload Identity Federation to
-authenticate to Google Cloud. These secrets must exist in your GitHub repository.
-
-1. Go to **GitHub → Settings → Secrets and variables → Actions**
-2. Add the following repository secrets:
+## Step 4 — GitHub Secrets: Set CI/CD credentials
 
 | Secret name | Value |
 |---|---|
-| `VITE_FIREBASE_API_KEY` | Firebase Web API key — see Step 1 above |
-| `WIF_PROVIDER` | Your Workload Identity Provider resource name (e.g. `projects/123/locations/global/workloadIdentityPools/my-pool/providers/my-provider`) |
-| `WIF_SERVICE_ACCOUNT` | The service account email (e.g. `firebase-deploy@gen-lang-client-0068569341.iam.gserviceaccount.com`) |
-
-> **Note:** If these were already set up when Firebase first connected to GitHub,
-> they're already there — just verify they exist.
+| `VITE_FIREBASE_API_KEY` | Firebase Web API key — see Step 1 |
+| `GEMINI_API_KEY` | Gemini AI API key — see Step 2 |
+| `WIF_PROVIDER` | Workload Identity Provider resource name |
+| `WIF_SERVICE_ACCOUNT` | Service account email |
 
 ---
 
-## Step 4 (Optional) — Staging environment
+## Step 5 (Optional) — Staging environment
 
-If you want a separate staging environment (lighter resources, separate AI key):
-
-1. In Firebase Console, select your **staging project**
-2. **App Hosting** → staging backend → **Settings** → **Environment**
-3. Set **Environment name** to: `staging`
-   (this makes App Hosting use `apphosting.staging.yaml` overrides automatically)
-4. In Secret Manager for the **staging project**, create a secret named `GEMINI_API_KEY_STAGING`
-5. Grant the staging project's App Hosting service account access to it (same as Step 2 above)
+1. Firebase Console → **App Hosting** → staging backend → **Settings** → **Environment**
+2. Set **Environment name** to: `staging`
+3. In Secret Manager, create `GEMINI_API_KEY_STAGING` and grant service account access
 
 ---
 
-## Step 5 — Merge and deploy
+## Step 6 — Merge and deploy
 
-Once Steps 1–3 are complete:
-
-1. **Merge this PR into `main`**
-2. The `firebase-hosting-merge.yml` GitHub Action runs automatically:
-   - Installs dependencies (`npm ci`)
-   - Builds the app (`npm run build`) — `VITE_FIREBASE_API_KEY` (from the GitHub secret set in Step 1) and `VITE_GEMINI_API_KEY` (from the `GEMINI_API_KEY` secret in Step 2, exposed via `apphosting.yaml availability: BUILD`) are both inlined by Vite at this point
-   - Authenticates to Google Cloud
-   - Deploys to Firebase Hosting
-3. Visit `https://creativelandscapingsolutions.com` — the site is live ✅
+Once Steps 1–4 are complete, merge this PR into `main`. The GitHub Action will:
+- Build the app with both `VITE_FIREBASE_API_KEY` and `VITE_GEMINI_API_KEY` inlined
+- Deploy to Firebase Hosting at `https://creativelandscapingsolutions.com` ✅
 
 ---
 
 ## Troubleshooting — `auth/api-key-expired` in diagnostics
 
-If you see this warning in the browser diagnostics panel:
-> *"Firebase Auth: API key is expired or invalid. Please renew VITE_FIREBASE_API_KEY"*
-> or
-> *"Anonymous sign-in failed. Syncing without auth. Firebase: Error (auth/api-key-expired…)"*
+**Symptom:** `Anonymous sign-in failed. Firebase: Error (auth/api-key-expired…)`
 
-**What it means:** The Firebase Web API key stored in the `VITE_FIREBASE_API_KEY` GitHub
-repository secret is no longer accepted by Firebase Auth. This typically happens when the
-API key is deleted, regenerated, or has API restrictions applied in Google Cloud Console.
+**Cause:** The Firebase Web API key in the `VITE_FIREBASE_API_KEY` GitHub secret is expired or restricted.
 
-**Impact:** The app continues to function in read/write mode because Firestore and Storage
-rules allow unauthenticated access. However, it is best practice to restore a valid auth
-session.
-
-**How to fix:**
-
-1. Open [Firebase Console](https://console.firebase.google.com) → project **`gen-lang-client-0068569341`**
-2. Click ⚙️ gear → **Project settings** → **Your apps** → Web app → copy the `apiKey` value
-3. If the key shown there matches the one already in GitHub Secrets, the key itself may have
-   API restrictions. Go to [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials),
-   find the browser API key for the Firebase project, and ensure **Identity Toolkit API** is
-   in its allowed APIs list (or remove all restrictions for the Firebase Web key).
-4. Update the GitHub secret:
-   - **Settings → Secrets and variables → Actions → `VITE_FIREBASE_API_KEY`** → update the value
-5. Re-run the **"Deploy to Firebase Hosting on merge"** workflow (or merge a new commit) to
-   rebuild and redeploy with the fresh key.
+**Fix:**
+1. Go to [Firebase Console](https://console.firebase.google.com) → Project settings → Your apps → copy `apiKey`
+2. Check [Google Cloud Console → Credentials](https://console.cloud.google.com/apis/credentials) — ensure **Identity Toolkit API** is allowed on the key (or remove all restrictions)
+3. Update GitHub secret `VITE_FIREBASE_API_KEY` with the correct value
+4. Re-run the deploy workflow
 
 ---
 
-## Troubleshooting — "Database secrets are currently deprecated" warning
+## Troubleshooting — Chat / AI Studio not working
 
-If you see this warning in the Firebase Console:
-> *"Database secrets are currently deprecated and use a legacy Firebase token generator.
-> Update your source code with the Firebase Admin SDK."*
+**Symptom:** Chat falls back to phone number; Design Studio shows an error.
 
-**Where it lives:** Firebase Console → **Realtime Database** → **Data** tab (or the gear icon in
-the Realtime Database section).
+**Cause:** `VITE_GEMINI_API_KEY` was not available at build time (missing GitHub secret `GEMINI_API_KEY`).
 
-**What it means:** Firebase auto-enables a legacy Realtime Database token generator when a project
-is first set up. This site **does not use Realtime Database at all** — it uses Firestore exclusively.
-There is no "delete" button for these deprecated secrets; Firebase removed that UI option.
-
-**How to permanently remove the warning:**
-
-Since this project does not use Realtime Database, the cleanest fix is to delete the
-Realtime Database instance entirely:
-
-1. Open [Firebase Console](https://console.firebase.google.com) → select your project
-2. In the left navigation, click **Realtime Database**
-3. Click the ⋮ **more options** menu (three dots) in the top-right of the database panel
-4. Select **Delete database**
-5. Confirm the deletion — the Realtime Database instance is removed, and the warning disappears
-
-> **This is safe.** The CLS app reads/writes exclusively to Firestore. Deleting the unused
-> Realtime Database instance has no effect on the app.
-
-> **Cannot find Realtime Database in the left nav?** It may not be enabled yet in your project.
-> If you don't see it, the warning may resolve on its own as Firebase finishes deprecating the
-> legacy token system — no action needed.
-
-> **Note:** This site is a client-side browser app and cannot use the Firebase Admin SDK
-> (Admin SDK is server-only). The correct client SDK (`firebase/app`, `firebase/firestore`,
-> `firebase/storage`) is already in use.
+**Fix:** Add `GEMINI_API_KEY` as a GitHub repository secret (Step 2), then re-run the deploy workflow.
 
 ---
 
@@ -169,11 +124,13 @@ Realtime Database instance entirely:
 
 | ✅ | What | File |
 |---|---|---|
+| ✅ | Both API keys injected at build time | `.github/workflows/firebase-hosting-merge.yml` |
+| ✅ | Firebase API key in App Hosting config | `apphosting.yaml` |
+| ✅ | Gallery falls back to defaults when empty/offline | `context/GalleryContext.tsx` |
+| ✅ | Chat uses googleSearch grounding (no restricted Maps tool) | `services/geminiService.ts` |
+| ✅ | AI Studio uses correct model names | `services/geminiService.ts` |
+| ✅ | Fast image upload (blob URL, no base64 round-trip) | `components/ImagePickerModal.tsx` |
 | ✅ | SPA routing (no 404 on direct URLs) | `firebase.json` |
-| ✅ | Build before deploy in CI | `.github/workflows/firebase-hosting-merge.yml` |
-| ✅ | All AI features working (correct SDK, correct env vars) | `services/geminiService.ts`, `components/ChatWidget.tsx` |
-| ✅ | Trust-scroller animation | `index.html` |
-| ✅ | TypeScript 0 errors | `vite-env.d.ts`, `tsconfig.json` |
 | ✅ | Production App Hosting config | `apphosting.yaml` |
 | ✅ | Staging App Hosting config | `apphosting.staging.yaml` |
 | ✅ | Local dev instructions | `.env.example` |
