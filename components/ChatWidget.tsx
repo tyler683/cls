@@ -146,6 +146,16 @@ const ChatWidget: React.FC = () => {
     e?.preventDefault();
     if (!input.trim() || isLoading) return;
 
+    if (!GEMINI_API_KEY) {
+      setMessages(prev => [...prev, {
+        role: 'model',
+        text: "The AI assistant isn't configured yet. Please call Tyler directly at (816) 337-2654 or fill out the quote form.",
+        timestamp: Date.now()
+      }]);
+      setInput('');
+      return;
+    }
+
     const userMsg: MessageWithLinks = { role: 'user', text: input, timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');

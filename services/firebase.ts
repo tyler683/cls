@@ -76,7 +76,8 @@ if (IS_FIREBASE_CONFIGURED) {
               diagnostics.log('success', `Signed in anonymously (uid: ${cred.user.uid})`);
             })
             .catch((err: any) => {
-              if (err.code === 'auth/api-key-expired' || err.code === 'auth/invalid-api-key') {
+              const code: string = err.code || '';
+              if (code.startsWith('auth/api-key-expired') || code.startsWith('auth/invalid-api-key')) {
                 diagnostics.log('warn', 'Firebase Auth: API key is expired or invalid. Please renew VITE_FIREBASE_API_KEY (see DEPLOY.md — Troubleshooting: auth/api-key-expired). Continuing without auth — reads/writes use open Firestore rules.', err.message);
               } else {
                 diagnostics.log('warn', 'Anonymous sign-in failed. Syncing without auth.', err.message);

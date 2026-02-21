@@ -112,8 +112,16 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
 
   useEffect(() => {
     if (isConnected) {
+      // Fallback: if Firestore never responds within 8 s (e.g. expired API key causes a
+      // silent hang), switch to local mode so the gallery never spins indefinitely.
+      const fallbackTimer = setTimeout(() => {
+        diagnostics.log('warn', 'Gallery: Firestore did not respond in time. Falling back to local mode.');
+        setIsConnected(false);
+      }, 8000);
+
       const unsubscribe = subscribeToGallery(
         (items) => {
+          clearTimeout(fallbackTimer);
           setRemoteProjects(
             items.length > 0
               ? items.sort((a, b) => (b.id || '').localeCompare(a.id || ''))
@@ -126,13 +134,19 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
           setPendingProjects(prev => prev.filter(p => !remoteIds.has(p.id)));
         },
         (error) => {
-           diagnostics.log('error', "Gallery sync failed", error.message);
-           // Fall back to offline/local mode on any Firestore error
-           setIsConnected(false);
-           setIsLoading(false);
+          clearTimeout(fallbackTimer);
+          diagnostics.log('error', "Gallery sync failed", error.message);
+          // Fall back to offline/local mode on any Firestore error.
+          // Do NOT call setIsLoading(false) here — the effect re-run caused by
+          // setIsConnected(false) will load defaults and then clear the loading state,
+          // preventing a flash of "No projects found".
+          setIsConnected(false);
         }
       );
-      return () => unsubscribe();
+      return () => {
+        clearTimeout(fallbackTimer);
+        unsubscribe();
+      };
     } else {
       const saved = localStorage.getItem('cls_gallery_projects');
       setRemoteProjects(saved ? JSON.parse(saved) : DEFAULT_PROJECTS);
