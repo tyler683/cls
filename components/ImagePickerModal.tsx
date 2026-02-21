@@ -62,11 +62,10 @@ const compressImage = async (file: File, onProgress?: (step: string) => void): P
           ctx.drawImage(img, 0, 0, width, height);
           
           onProgress?.("Finalizing...");
-          // WebP is significantly smaller with minimal loss
-          canvas.toBlob((blob) => {
-            if (blob) resolve(URL.createObjectURL(blob));
-            else reject(new Error("Blob conversion failed"));
-          }, 'image/webp', 0.82);
+          // Use toDataURL so the result survives page reloads (blob URLs expire with the session).
+          const dataUrl = canvas.toDataURL('image/webp', 0.82);
+          if (dataUrl && dataUrl.startsWith('data:image/')) resolve(dataUrl);
+          else reject(new Error("Image conversion failed"));
         };
         
         img.onerror = () => reject(new Error("Image decode failed"));
