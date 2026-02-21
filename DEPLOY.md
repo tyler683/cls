@@ -110,6 +110,20 @@ Once Steps 1–4 are complete, merge this PR into `main`. The GitHub Action will
 
 ---
 
+## Troubleshooting — `auth/configuration-not-found` in diagnostics
+
+**Symptom:** `Firebase Auth: Anonymous sign-in provider is not enabled. … Firebase: Error (auth/configuration-not-found…)`
+
+**Cause:** Firebase Authentication is initialized but the **Anonymous** sign-in provider has not been enabled in the Firebase console.
+
+**Fix:**
+1. Go to [Firebase Console](https://console.firebase.google.com) → select project **`gen-lang-client-0068569341`**
+2. In the left-hand menu click **Authentication** → **Sign-in method**
+3. Find **Anonymous** in the list, click it, toggle **Enable**, and save
+4. The app will sign in anonymously on the next page load — no redeployment needed
+
+---
+
 ## Troubleshooting — Chat / AI Studio not working
 
 **Symptom:** Chat falls back to phone number; Design Studio shows an error.
