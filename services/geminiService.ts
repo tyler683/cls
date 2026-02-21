@@ -37,6 +37,8 @@ const blobUrlToBase64 = async (url: string): Promise<string> => {
   });
 };
 
+const MAX_HISTORY_MESSAGES = 10;
+
 export const getChatResponse = async (history: ChatMessage[], userMessage: string): Promise<ChatResponse> => {
   try {
     // Initializing Gemini client with API key from environment
@@ -49,11 +51,12 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
       latLng = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
     } catch (e) {}
 
-    // Using gemini-2.5-flash for maps grounding tasks as per guidelines
+    // Use gemini-2.0-flash for cost-effective chat; limit history to reduce tokens per call
+    const trimmedHistory = history.slice(-MAX_HISTORY_MESSAGES);
     const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       contents: [
-        ...history.map(msg => ({
+        ...trimmedHistory.map(msg => ({
           role: msg.role === 'user' ? 'user' : 'model',
           parts: [{ text: msg.text }]
         })),
@@ -61,7 +64,8 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
       ],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        tools: [{ googleMaps: {} }, { googleSearch: {} }],
+        maxOutputTokens: 1024,
+        tools: [{ googleSearch: {} }],
         toolConfig: {
           retrievalConfig: { latLng }
         }
@@ -89,14 +93,14 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
 export const generateDesignVision = async (userDescription: string): Promise<DesignVisionResponse> => {
   try {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    // Fix: Set maxOutputTokens and thinkingBudget together as per Gemini 3 guidelines
+    // Use gemini-2.0-flash for cost-effective design vision generation
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.0-flash",
       contents: `Design concept for: "${userDescription}". Consider KC soil and climate.`,
       config: {
         systemInstruction: "You are a professional landscape architect specializing in Kansas City residential design.",
-        maxOutputTokens: 6000,
-        thinkingConfig: { thinkingBudget: 4000 },
+        maxOutputTokens: 2000,
+        thinkingConfig: { thinkingBudget: 1000 },
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,

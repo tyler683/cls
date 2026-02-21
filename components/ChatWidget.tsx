@@ -64,8 +64,8 @@ const ChatWidget: React.FC = () => {
       const inputCtx = new (window.AudioContext || (window as any).webkitAudioContext)({ sampleRate: 16000 });
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const sessionPromise = ai.live.connect({
-        // Always use the latest model name for native audio tasks as per guidelines
-        model: 'gemini-2.5-flash-native-audio-preview-12-2025',
+        // Use gemini-2.0-flash-live-001 for cost-effective real-time audio
+        model: 'gemini-2.0-flash-live-001',
         callbacks: {
           onopen: () => {
             const source = inputCtx.createMediaStreamSource(stream);
