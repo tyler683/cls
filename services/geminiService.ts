@@ -41,15 +41,7 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
   try {
     // Initializing Gemini client with API key from environment
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    let latLng = { latitude: 39.0997, longitude: -94.5786 };
-    try {
-      const pos = await new Promise<GeolocationPosition>((res, rej) => 
-        navigator.geolocation.getCurrentPosition(res, rej, { timeout: 3000 })
-      );
-      latLng = { latitude: pos.coords.latitude, longitude: pos.coords.longitude };
-    } catch (e) {}
-
-    // Using gemini-2.5-flash for maps grounding tasks as per guidelines
+    // Using gemini-2.5-flash for chat with search grounding
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: [
@@ -61,10 +53,7 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
       ],
       config: {
         systemInstruction: SYSTEM_INSTRUCTION,
-        tools: [{ googleMaps: {} }, { googleSearch: {} }],
-        toolConfig: {
-          retrievalConfig: { latLng }
-        }
+        tools: [{ googleSearch: {} }],
       },
     });
 
@@ -89,9 +78,9 @@ export const getChatResponse = async (history: ChatMessage[], userMessage: strin
 export const generateDesignVision = async (userDescription: string): Promise<DesignVisionResponse> => {
   try {
     const ai = new GoogleGenAI({ apiKey: GEMINI_API_KEY });
-    // Fix: Set maxOutputTokens and thinkingBudget together as per Gemini 3 guidelines
+    // Using gemini-2.5-flash for structured design generation
     const response = await ai.models.generateContent({
-      model: "gemini-3-flash-preview",
+      model: "gemini-2.5-flash",
       contents: `Design concept for: "${userDescription}". Consider KC soil and climate.`,
       config: {
         systemInstruction: "You are a professional landscape architect specializing in Kansas City residential design.",
@@ -125,14 +114,17 @@ export const generateLandscapeImage = async (imageUrl: string, prompt: string): 
     const cleanBase64 = base64Data.split(',')[1] || base64Data;
     const mimeType = base64Data.match(/data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+).*,.*/)?.[1] || 'image/jpeg';
     
-    // Using gemini-2.5-flash-image for image editing/generation tasks
+    // Using gemini-2.0-flash-exp which supports multimodal image output
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-image',
+      model: 'gemini-2.0-flash-exp',
       contents: {
         parts: [
           { inlineData: { data: cleanBase64, mimeType } },
           { text: `Redesign landscape: ${prompt}. Cinematic, photorealistic, premium hardscaping design.` },
         ],
+      },
+      config: {
+        responseModalities: ['IMAGE', 'TEXT'],
       },
     });
     for (const cand of response.candidates || []) {

@@ -14,68 +14,54 @@ const MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB
 
 /**
  * Optimizes an image file for web viewing using high-performance canvas APIs.
+ * Uses createObjectURL + toBlob to avoid the slow base64 encoding round-trip.
  */
-const compressImage = async (file: File, onProgress?: (step: string) => void): Promise<string> => {
+const compressImage = (file: File, onProgress?: (step: string) => void): Promise<string> => {
   if (file.name.toLowerCase().endsWith('.heic') || file.name.toLowerCase().endsWith('.heif')) {
      throw new Error("Apple HEIC/HEIF photos detected. Please download as JPEG or take a screenshot to upload.");
   }
 
-  onProgress?.("Reading file...");
-  
+  onProgress?.("Decoding image...");
+
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const dataUrl = e.target?.result as string;
-        
-        onProgress?.("Decoding image...");
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        
-        img.onload = () => {
-          onProgress?.("Optimizing...");
-          const canvas = document.createElement('canvas');
-          let width = img.width;
-          let height = img.height;
-          
-          const MAX_DIMENSION = 2048; // Sufficient for 4K viewing
-          if (width > height) {
-            if (width > MAX_DIMENSION) {
-              height *= MAX_DIMENSION / width;
-              width = MAX_DIMENSION;
-            }
-          } else {
-            if (height > MAX_DIMENSION) {
-              width *= MAX_DIMENSION / height;
-              height = MAX_DIMENSION;
-            }
-          }
-          
-          canvas.width = width;
-          canvas.height = height;
-          
-          const ctx = canvas.getContext('2d', { alpha: false });
-          if (!ctx) return reject(new Error("Canvas context failed"));
-          
-          ctx.imageSmoothingEnabled = true;
-          ctx.imageSmoothingQuality = 'high';
-          ctx.drawImage(img, 0, 0, width, height);
-          
-          onProgress?.("Finalizing...");
-          // Use toDataURL so the result survives page reloads (blob URLs expire with the session).
-          const dataUrl = canvas.toDataURL('image/webp', 0.82);
-          if (dataUrl && dataUrl.startsWith('data:image/')) resolve(dataUrl);
-          else reject(new Error("Image conversion failed"));
-        };
-        
-        img.onerror = () => reject(new Error("Image decode failed"));
-        img.src = dataUrl;
-      } catch (err) {
-        reject(err);
+    const objectUrl = URL.createObjectURL(file);
+    const img = new Image();
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+      onProgress?.("Optimizing...");
+
+      const canvas = document.createElement('canvas');
+      let width = img.width;
+      let height = img.height;
+
+      const MAX_DIMENSION = 2048;
+      if (width > height) {
+        if (width > MAX_DIMENSION) { height *= MAX_DIMENSION / width; width = MAX_DIMENSION; }
+      } else {
+        if (height > MAX_DIMENSION) { width *= MAX_DIMENSION / height; height = MAX_DIMENSION; }
       }
+
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) { reject(new Error("Canvas context failed")); return; }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = 'high';
+      ctx.drawImage(img, 0, 0, width, height);
+
+      onProgress?.("Finalizing...");
+      // toBlob is non-blocking and avoids the base64 encoding overhead of toDataURL
+      canvas.toBlob((blob) => {
+        if (blob) resolve(URL.createObjectURL(blob));
+        else reject(new Error("Image conversion failed"));
+      }, 'image/webp', 0.82);
     };
-    reader.onerror = () => reject(new Error("File read failed"));
-    reader.readAsDataURL(file);
+
+    img.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error("Image decode failed")); };
+    img.src = objectUrl;
   });
 };
 

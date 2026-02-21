@@ -26,6 +26,7 @@ jobs:
         run: npm run build
         env:
           VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+          VITE_GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
       - name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@v2'

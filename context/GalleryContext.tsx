@@ -114,7 +114,11 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
     if (isConnected) {
       const unsubscribe = subscribeToGallery(
         (items) => {
-          setRemoteProjects(items.sort((a, b) => (b.id || '').localeCompare(a.id || '')));
+          setRemoteProjects(
+            items.length > 0
+              ? items.sort((a, b) => (b.id || '').localeCompare(a.id || ''))
+              : DEFAULT_PROJECTS
+          );
           setIsLoading(false);
           
           // Clean up pending items that have successfully synced
@@ -123,7 +127,8 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
         },
         (error) => {
            diagnostics.log('error', "Gallery sync failed", error.message);
-           if (error.code === 'permission-denied') setIsConnected(false);
+           // Fall back to offline/local mode on any Firestore error
+           setIsConnected(false);
            setIsLoading(false);
         }
       );
@@ -183,6 +188,9 @@ export const GalleryProvider: React.FC<{ children: ReactNode }> = ({ children })
           };
           await withTimeout(addGalleryItemToDb(savedItem), 30_000);
           diagnostics.log('success', `uploadMedia: "${item.title}" synced to cloud successfully.`);
+          // Revoke blob URLs now that the permanent Firebase URL has been saved
+          if (item.imageUrl?.startsWith('blob:')) URL.revokeObjectURL(item.imageUrl);
+          if (item.videoThumbnail?.startsWith('blob:')) URL.revokeObjectURL(item.videoThumbnail);
           setPendingProjects(prev => prev.map(pItem => 
             pItem.id === item.id ? { ...pItem, uploadStatus: 'success' as UploadStatus, uploadProgress: 100 } : pItem
           ));
